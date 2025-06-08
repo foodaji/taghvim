@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سررسید دیجیتال</title>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #22c55e;
+            --success-hover: #16a34a;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --secondary: #6b7280;
+            --secondary-hover: #4b5563;
+            --light: #f9fafb;
+            --dark: #111827;
+        }
+        
+        body { 
+            font-family: 'Vazir', sans-serif; 
+            background-color: #f7fafc;
+        }
+        
+        .container { 
+            max-width: 1280px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            padding: 1rem;
+        }
+        
+        .bg-white { 
+            background-color: #fff; 
+        }
+        
+        .p-4 { padding: 1rem; }
+        .p-2 { padding: 0.5rem; }
+        .p-1 { padding: 0.25rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .px-1\.5 { padding-left: 0.375rem; padding-right: 0.375rem; }
+        .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .mx-1 { margin-left: 0.25rem; margin-right: 0.25rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-md { font-size: 1rem; line-height: 1.5rem; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .font-bold { font-weight: 700; }
+        .text-center { text-align: center; }
+        .text-white { color: #fff; }
+        .text-green-500 { color: var(--success); }
+        .text-gray-500 { color: var(--secondary); }
+        .text-yellow-500 { color: var(--warning); }
+        .text-orange-500 { color: #f97316; }
+        .text-red-500 { color: var(--danger); }
+        .text-black { color: var(--dark); }
+        .bg-blue-500 { background-color: var(--primary); }
+        .bg-green-500 { background-color: var(--success); }
+        .bg-orange-500 { background-color: #f97316; }
+        .bg-gray-50 { background-color: var(--light); }
+        .bg-gray-200 { background-color: #e5e7eb; }
+        .hover\:bg-gray-100:hover { background-color: #f3f4f6; }
+        .hover\:bg-gray-200:hover { background-color: #e5e7eb; }
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .gap-4 { gap: 1rem; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .inline-flex { display: inline-flex; }
+        .w-full { width: 100%; }
+        .w-20 { width: 5rem; }
+        .w-1\/2 { width: 50%; }
+        .w-6 { width: 1.5rem; }
+        .h-6 { height: 1.5rem; }
+        .rounded { border-radius: 0.25rem; }
+        .rounded-full { border-radius: 9999px; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .border { border-width: 1px; border-color: #e5e7eb; }
+        .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .cursor-pointer { cursor: pointer; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .top-0 { top: 0; }
+        .right-0 { right: 0; }
+        .hidden { display: none; }
+        .line-through { text-decoration: line-through; }
+        
+        /* Custom Styles */
+        .calendar-day { 
+            padding: 0.5rem; 
+            cursor: pointer; 
+            position: relative; 
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .calendar-day:hover { 
+            background-color: #f3f4f6; 
+        }
+        .selected-day { 
+            background-color: var(--primary); 
+            color: white;
+            border-radius: 0.25rem;
+        }
+        .task-item { 
+            display: flex; 
+            align-items: center; 
+            padding: 0.5rem; 
+            margin-bottom: 0.5rem; 
+            background-color: var(--light); 
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+        }
+        .task-item:hover {
+            background-color: #e5e7eb;
+        }
+        .task-count-badge { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 1.25rem; 
+            height: 1.25rem; 
+            margin-left: 0.25rem; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            color: white; 
+            background-color: #f97316; 
+            border-radius: 9999px; 
+        }
+        .holiday { 
+            color: var(--danger); 
+            font-weight: bold;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        .btn-warning:hover {
+            background-color: var(--warning-hover);
+        }
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: var(--secondary-hover);
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .btn-icon {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Task Actions */
+        .task-actions {
+            display: flex;
+            margin-right: auto;
+            gap: 0.25rem;
+        }
+        .task-text {
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+        .task-description {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            padding-right: 2rem;
+        }
+        .description-input {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            font-family: inherit;
+        }
+        
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 350px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1001;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        .settings-panel.open {
+            right: 0;
+        }
+        .holiday-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background-color: var(--light);
+            border-radius: 0.25rem;
+        }
+        .holiday-date {
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        /* Calendar Picker */
+        .calendar-picker {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        .calendar-picker .calendar-day {
+            padding: 0.25rem;
+        }
+        .calendar-picker .selected-holiday {
+            background-color: var(--danger);
+            color: white;
+            border-radius: 0.25rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-cols-1 {
+                grid-template-columns: 1fr;
+            }
+            .settings-panel {
+                width: 280px;
+            }
+        }
+        @media (min-width: 1024px) {
+            .lg\:grid-cols-3 { 
+                grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-spinner" id="loadingSpinner"></div>
+    
+    <div class="container mx-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold text-center">سررسید دیجیتال</h1>
+            <div class="flex gap-2">
+                <button id="searchToggle" class="btn btn-secondary search-toggle">
+                    <i class="fas fa-search mr-1"></i> جستجو
+                </button>
+                <button id="settingsToggle" class="btn btn-secondary">
+                    <i class="fas fa-cog mr-1"></i> تنظیمات
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- تقویم -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <button id="prevMonth" class="btn btn-primary">
+                        <i class="fas fa-chevron-right"></i> ماه قبل
+                    </button>
+                    <h2 id="monthYear" class="text-lg font-bold"></h2>
+                    <button id="nextMonth" class="btn btn-primary">
+                        ماه بعد <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+                <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
+            </div>
+
+            <!-- مدیریت کارها -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 id="selectedDate" class="text-lg font-bold mb-4"></h2>
+                <div class="mb-4">
+                    <input id="taskInput" type="text" placeholder="کار جدید..." class="w-full p-2 border rounded">
+                    <div class="mt-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="isRecurring" class="mr-2">
+                            <span>کار تکراری</span>
+                        </label>
+                        <div id="recurringOptions" class="hidden mt-2">
+                            <select id="recurringType" class="p-2 border rounded">
+                                <option value="weekly">هفتگی</option>
+                                <option value="daily">هر X روز</option>
+                                <option value="monthly">ماهیانه</option>
+                            </select>
+                            <input id="recurringInterval" type="number" min="1" value="1" class="p-2 border rounded w-20" placeholder="فاصله">
+                        </div>
+                    </div>
+                    <button id="addTask" class="btn btn-success mt-2 w-full">
+                        <i class="fas fa-plus mr-1"></i> افزودن
+                    </button>
+                </div>
+                <div id="taskList" class="mt-4"></div>
+            </div>
+
+            <!-- کارهای انجام‌نشده و جستجو -->
+            <div>
+                <!-- کارهای انجام‌نشده -->
+                <div class="bg-white p-4 rounded-lg shadow mb-4">
+                    <h2 class="text-lg font-bold mb-4">کارهای انجام‌نشده</h2>
+                    <div id="incompleteTasks" class="mt-2"></div>
+                </div>
+                
+                <!-- جستجو -->
+                <div id="searchSection" class="bg-white p-4 rounded-lg shadow hidden">
+                    <h2 class="text-lg font-bold mb-4">جستجو</h2>
+                    <div class="mb-4">
+                        <input id="searchInput" type="text" placeholder="جستجوی کار یا توضیحات..." class="w-full p-2 border rounded mb-2">
+                        <div class="flex gap-2">
+                            <input id="searchStartDate" type="text" placeholder="از تاریخ (YYYY-MM-DD)" class="p-2 border rounded w-1/2">
+                            <input id="searchEndDate" type="text" placeholder="تا تاریخ (YYYY-MM-DD)" class="p-2 border rounded w-1/2">
+                        </div>
+                    </div>
+                    <div id="searchResults" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Picker Modal -->
+    <div id="datePicker" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">انتقال کار به تاریخ جدید</h3>
+            <div class="mb-4">
+                <button id="moveToTomorrow" class="btn btn-primary mb-2 w-full">
+                    <i class="fas fa-arrow-right mr-1"></i> انتقال به فردا
+                </button>
+                <button id="pickAnotherDate" class="btn btn-success w-full">
+                    <i class="fas fa-calendar-alt mr-1"></i> انتخاب تاریخ دیگر
+                </button>
+            </div>
+            <div id="datePickerCalendar" class="grid grid-cols-7 gap-1 text-center hidden"></div>
+            <button id="confirmDate" class="btn btn-success mt-2 w-full hidden">
+                <i class="fas fa-check mr-1"></i> تایید
+            </button>
+            <button id="cancelDatePicker" class="btn btn-danger mt-2 w-full">
+                <i class="fas fa-times mr-1"></i> لغو
+            </button>
+        </div>
+    </div>
+
+    <!-- Description Modal -->
+    <div id="descriptionModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">توضیحات کار</h3>
+            <textarea id="descriptionInput" class="description-input" placeholder="توضیحات کار..."></textarea>
+            <div class="flex gap-2 mt-4">
+                <button id="saveDescription" class="btn btn-success flex-1">
+                    <i class="fas fa-save mr-1"></i> ذخیره
+                </button>
+                <button id="cancelDescription" class="btn btn-danger flex-1">
+                    <i class="fas fa-times mr-1"></i> انصراف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holidays Picker Modal -->
+    <div id="holidaysPickerModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">انتخاب روزهای تعطیل</h3>
+            <div class="flex justify-between items-center mb-4">
+                <button id="prevHolidayMonth" class="btn btn-primary">
+                    <i class="fas fa-chevron-right"></i> ماه قبل
+                </button>
+                <h2 id="holidayMonthYear" class="text-lg font-bold"></h2>
+                <button id="nextHolidayMonth" class="btn btn-primary">
+                    ماه بعد <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <div class="calendar-picker">
+                <div id="holidaysPickerCalendar" class="grid grid-cols-7 gap-1 text-center"></div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button id="saveHolidays" class="btn btn-success flex-1">
+                    <i class="fas fa-save mr-1"></i> ذخیره تعطیلات
+                </button>
+                <button id="cancelHolidaysPicker" class="btn btn-danger flex-1">
+                    <i class="fas fa-times mr-1"></i> انصراف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="settings-panel">
+        <h2 class="text-xl font-bold mb-4">تنظیمات</h2>
+        
+        <h3 class="text-lg font-bold mb-2">تعطیلات رسمی</h3>
+        <button id="openHolidaysPicker" class="btn btn-primary mb-4 w-full">
+            <i class="fas fa-calendar-alt mr-1"></i> انتخاب از تقویم
+        </button>
+        <div id="holidaysList" class="mb-4">
+            <!-- Holidays will be added here dynamically -->
+        </div>
+        <div class="flex mb-4">
+            <input id="newHoliday" type="text" placeholder="YYYY-MM-DD" class="p-2 border rounded w-full">
+            <button id="addHoliday" class="btn btn-success mr-2">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        
+        <button id="closeSettings" class="btn btn-danger w-full">
+            <i class="fas fa-times mr-1"></i> بستن تنظیمات
+        </button>
+    </div>
+
+    <script>
+        // تنظیمات API
+        const API_URL = "https://api.jsonbin.io/v3/b/6843ffef8a456b7966aa6e9e";
+        const API_KEY = "$2a$10$K0GxG/YDDvwcCOicoQSc3OIPqPpUflP5JvKxVStM6sdQYjq4LdXKi";
+
+        const tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+        let holidays = JSON.parse(localStorage.getItem('holidays')) || [];
+        let currentDate = new persianDate();
+        let selectedDate = currentDate.clone();
+        let holidaysPickerDate = currentDate.clone();
+        let moveTaskContext = { date: '', index: -1 };
+        let descriptionContext = { date: '', index: -1 };
+
+        // نمایش دایره چرخان
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+
+        // مخفی کردن دایره چرخان
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        // بارگذاری اولیه داده‌ها از فضای ابری
+        async function loadInitialData() {
+            showLoading();
+            try {
+                const response = await fetch(API_URL, {
+                    headers: {
+                        'X-Master-Key': API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('خطا در بارگذاری داده‌ها');
+
+                const data = await response.json();
+                if (data.record) {
+                    if (data.record.tasks) {
+                        Object.keys(data.record.tasks).forEach(date => {
+                            tasks[date] = data.record.tasks[date];
+                        });
+                    }
+                    holidays = data.record.holidays || holidays;
+                    saveTasks();
+                    renderCalendar();
+                    renderTasks();
+                    renderHolidaysList();
+                }
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ذخیره داده‌ها در فضای ابری
+        async function saveToCloud() {
+            showLoading();
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tasks, holidays })
+                });
+
+                if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
+                console.log('Data saved to cloud successfully');
+            } catch (error) {
+                console.error('Error saving to cloud:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function isHoliday(date) {
+            const dateStr = date.format('YYYY-MM-DD');
+            return holidays.includes(dateStr);
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            const monthYear = document.getElementById('monthYear');
+            calendar.innerHTML = '';
+
+            const daysOfWeek = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+            daysOfWeek.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = day;
+                dayEl.className = 'font-bold';
+                calendar.appendChild(dayEl);
+            });
+
+            const firstDayOfMonth = currentDate.clone().startOf('month');
+            const lastDayOfMonth = currentDate.clone().endOf('month');
+            const startDay = firstDayOfMonth.day();
+            const daysInMonth = lastDayOfMonth.date();
+
+            monthYear.textContent = currentDate.format('MMMM YYYY');
+
+            for (let i = 0; i < (startDay + 6) % 7; i++) {
+                const emptyDay = document.createElement('div');
+                calendar.appendChild(emptyDay);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayEl = document.createElement('div');
+                const date = currentDate.clone().date(i);
+                const dateStr = date.format('YYYY-MM-DD');
+                const taskCount = tasks[dateStr] ? tasks[dateStr].filter(task => !task.completed).length : 0;
+                
+                dayEl.innerHTML = `
+                    <div class="relative">
+                        <span class="${date.day() === 7 ? 'text-red-500 font-bold' : 'text-blue'}">${i}</span>
+                        ${taskCount > 0 ? `<span class="task-count-badge">${taskCount}</span>` : ''}
+                    </div>
+                `;
+                
+                dayEl.className = 'calendar-day';
+                
+                if (isHoliday(date)) {
+                    dayEl.classList.add('holiday');
+                }
+                
+                if (i === selectedDate.date() && currentDate.month() === selectedDate.month() && currentDate.year() === selectedDate.year()) {
+                    dayEl.classList.add('selected-day');
+                }
+                
+                dayEl.addEventListener('click', () => {
+                    selectedDate = currentDate.clone().date(i);
+                    renderCalendar();
+                    renderTasks();
+                });
+                calendar.appendChild(dayEl);
+            }
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+            document.getElementById('selectedDate').textContent = selectedDate.format('DD MMMM YYYY');
+
+            taskList.innerHTML = '';
+            if (tasks[selectedDateStr] && Array.isArray(tasks[selectedDateStr])) {
+                tasks[selectedDateStr].forEach((task, index) => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = 'task-item';
+                    
+                    const descriptionHtml = task.description ? 
+                        `<div class="task-description">${task.description}</div>` : 
+                        '';
+                    
+                    taskEl.innerHTML = `
+                        <div class="w-full">
+                            <div class="flex items-center">
+                                <div class="task-actions">
+                                    <button onclick="toggleTask(${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
+                                        <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                                    </button>
+                                    ${!task.completed ? `
+                                    <button onclick="openMoveTaskDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>` : ''}
+                                    <button onclick="openDescriptionDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button onclick="deleteTask('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
+                            </div>
+                            ${descriptionHtml}
+                        </div>
+                    `;
+                    taskList.appendChild(taskEl);
+                });
+            }
+            renderIncompleteTasks();
+        }
+
+        function renderIncompleteTasks() {
+            const incompleteTasks = document.getElementById('incompleteTasks');
+            incompleteTasks.innerHTML = '';
+            
+            // جمع‌آوری همه کارهای انجام نشده
+            let allIncompleteTasks = [];
+            Object.keys(tasks).forEach(date => {
+                if (tasks[date] && Array.isArray(tasks[date])) {
+                    tasks[date].forEach((task, index) => {
+                        if (!task.completed) {
+                            allIncompleteTasks.push({
+                                date,
+                                index,
+                                task,
+                                persianDate: new persianDate(date)
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // مرتب‌سازی بر اساس تاریخ
+            allIncompleteTasks.sort((a, b) => a.persianDate - b.persianDate);
+            
+            // نمایش کارها
+            allIncompleteTasks.forEach(item => {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'task-item';
+                
+                const descriptionHtml = item.task.description ? 
+                    `<div class="task-description">${item.task.description}</div>` : 
+                    '';
+                
+                taskEl.innerHTML = `
+                    <div class="w-full">
+                        <div class="flex items-center">
+                            <div class="task-actions">
+                                <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="انجام">
+                                    <i class="fas fa-circle"></i>
+                                </button>
+                                <button onclick="openMoveTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                                <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button onclick="deleteTask('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <span class="task-text">${item.task.text} (${item.date})</span>
+                        </div>
+                        ${descriptionHtml}
+                    </div>
+                `;
+                incompleteTasks.appendChild(taskEl);
+            });
+        }
+
+        function toggleTask(index) {
+            const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+            if (tasks[selectedDateStr] && tasks[selectedDateStr][index]) {
+                tasks[selectedDateStr][index].completed = !tasks[selectedDateStr][index].completed;
+                saveTasks();
+                renderTasks();
+                renderCalendar();
+            }
+        }
+
+        function toggleTaskFromList(date, index) {
+            if (tasks[date] && tasks[date][index]) {
+                tasks[date][index].completed = !tasks[date][index].completed;
+                saveTasks();
+                renderTasks();
+                renderCalendar();
+            }
+        }
+
+        function deleteTask(date, index) {
+            if (confirm('آیا از حذف این کار مطمئن هستید؟')) {
+                if (tasks[date] && tasks[date][index]) {
+                    tasks[date].splice(index, 1);
+                    if (tasks[date].length === 0) {
+                        delete tasks[date];
+                    }
+                    saveTasks();
+                    renderTasks();
+                    renderCalendar();
+                }
+            }
+        }
+
+        function openMoveTaskDialog(date, index) {
+            moveTaskContext = { date, index };
+            document.getElementById('datePicker').style.display = 'flex';
+            document.getElementById('datePickerCalendar').classList.add('hidden');
+            document.getElementById('confirmDate').classList.add('hidden');
+            document.getElementById('moveToTomorrow').classList.remove('hidden');
+            document.getElementById('pickAnotherDate').classList.remove('hidden');
+        }
+
+        function moveTaskToTomorrow() {
+            const tomorrow = new persianDate(moveTaskContext.date).add('days', 1).format('YYYY-MM-DD');
+            moveTaskToDate(tomorrow);
+        }
+
+        function showDatePickerCalendar() {
+            document.getElementById('moveToTomorrow').classList.add('hidden');
+            document.getElementById('pickAnotherDate').classList.add('hidden');
+            document.getElementById('datePickerCalendar').classList.remove('hidden');
+            document.getElementById('confirmDate').classList.remove('hidden');
+            
+            const calendar = document.getElementById('datePickerCalendar');
+            calendar.innerHTML = '';
+            
+            const daysOfWeek = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+            daysOfWeek.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = day;
+                dayEl.className = 'font-bold';
+                calendar.appendChild(dayEl);
+            });
+            
+            const today = new persianDate();
+            const firstDayOfMonth = today.clone().startOf('month');
+            const lastDayOfMonth = today.clone().endOf('month');
+            const startDay = firstDayOfMonth.day();
+            const daysInMonth = lastDayOfMonth.date();
+            
+            for (let i = 0; i < (startDay + 6) % 7; i++) {
+                const emptyDay = document.createElement('div');
+                calendar.appendChild(emptyDay);
+            }
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = i;
+                dayEl.className = 'calendar-day';
+                
+                const date = today.clone().date(i);
+                if (date.day() === 7) {
+                    dayEl.classList.add('text-red-500', 'font-bold');
+                }
+                if (isHoliday(date)) {
+                    dayEl.classList.add('holiday');
+                }
+                
+                dayEl.addEventListener('click', () => {
+                    const selectedDay = today.clone().date(i);
+                    document.getElementById('confirmDate').dataset.date = selectedDay.format('YYYY-MM-DD');
+                });
+                
+                calendar.appendChild(dayEl);
+            }
+        }
+
+        function moveTaskToDate(newDateStr) {
+            const task = tasks[moveTaskContext.date] && tasks[moveTaskContext.date][moveTaskContext.index];
+            if (!task || task.completed) return;
+
+            tasks[moveTaskContext.date].splice(moveTaskContext.index, 1);
+            if (tasks[moveTaskContext.date].length === 0) delete tasks[moveTaskContext.date];
+            if (!tasks[newDateStr]) tasks[newDateStr] = [];
+            tasks[newDateStr].push(task);
+            saveTasks();
+            renderTasks();
+            renderCalendar();
+            closeDatePicker();
+        }
+
+        function closeDatePicker() {
+            document.getElementById('datePicker').style.display = 'none';
+        }
+
+        function openDescriptionDialog(date, index) {
+            descriptionContext = { date, index };
+            const task = tasks[date] && tasks[date][index];
+            if (task) {
+                document.getElementById('descriptionInput').value = task.description || '';
+                document.getElementById('descriptionModal').style.display = 'flex';
+            }
+        }
+
+        function saveDescription() {
+            const description = document.getElementById('descriptionInput').value;
+            if (tasks[descriptionContext.date] && tasks[descriptionContext.date][descriptionContext.index]) {
+                tasks[descriptionContext.date][descriptionContext.index].description = description;
+                saveTasks();
+                renderTasks();
+                closeDescriptionDialog();
+            }
+        }
+
+        function closeDescriptionDialog() {
+            document.getElementById('descriptionModal').style.display = 'none';
+        }
+
+        function addTask() {
+            const taskText = document.getElementById('taskInput').value;
+            const isRecurring = document.getElementById('isRecurring').checked;
+            const recurringType = document.getElementById('recurringType').value;
+            const recurringInterval = parseInt(document.getElementById('recurringInterval').value) || 1;
+
+            if (!taskText) return;
+
+            const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+            if (!tasks[selectedDateStr]) tasks[selectedDateStr] = [];
+
+            const task = { text: taskText, completed: false };
+            if (isRecurring) {
+                task.recurring = { type: recurringType, interval: recurringInterval };
+                addRecurringTasks(task, selectedDateStr);
+            } else {
+                tasks[selectedDateStr].push(task);
+            }
+
+            saveTasks();
+            document.getElementById('taskInput').value = '';
+            document.getElementById('isRecurring').checked = false;
+            document.getElementById('recurringOptions').classList.add('hidden');
+            renderTasks();
+            renderCalendar();
+        }
+
+        function addRecurringTasks(task, startDateStr) {
+            const startDate = new persianDate(startDateStr);
+            tasks[startDateStr].push({ ...task });
+
+            let nextDate = startDate.clone();
+            for (let i = 0; i < 12; i++) {
+                if (task.recurring.type === 'weekly') {
+                    nextDate = nextDate.add('days', 7 * task.recurring.interval);
+                } else if (task.recurring.type === 'daily') {
+                    nextDate = nextDate.add('days', task.recurring.interval);
+                } else if (task.recurring.type === 'monthly') {
+                    nextDate = nextDate.add('months', task.recurring.interval);
+                }
+                const nextDateStr = nextDate.format('YYYY-MM-DD');
+                if (!tasks[nextDateStr]) tasks[nextDateStr] = [];
+                tasks[nextDateStr].push({ ...task });
+            }
+        }
+
+        function searchTasks() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const startDate = document.getElementById('searchStartDate').value;
+            const endDate = document.getElementById('searchEndDate').value;
+            const searchResults = document.getElementById('searchResults');
+            searchResults.innerHTML = '';
+
+            const start = startDate ? new persianDate(startDate) : null;
+            const end = endDate ? new persianDate(endDate) : null;
+
+            Object.keys(tasks).forEach(date => {
+                const taskDate = new persianDate(date);
+                if (start && taskDate.isBefore(start)) return;
+                if (end && taskDate.isAfter(end)) return;
+
+                if (tasks[date] && Array.isArray(tasks[date])) {
+                    tasks[date].forEach((task, index) => {
+                        const matchesText = searchInput && 
+                            (task.text.toLowerCase().includes(searchInput) || 
+                             (task.description && task.description.toLowerCase().includes(searchInput)));
+                        
+                        if (searchInput && !matchesText) return;
+                        
+                        const taskEl = document.createElement('div');
+                        taskEl.className = 'task-item';
+                        
+                        const descriptionHtml = task.description ? 
+                            `<div class="task-description">${task.description}</div>` : 
+                            '';
+                        
+                        taskEl.innerHTML = `
+                            <div class="w-full">
+                                <div class="flex items-center">
+                                    <div class="task-actions">
+                                        <button onclick="toggleTaskFromList('${date}', ${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
+                                            <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                                        </button>
+                                        ${!task.completed ? `
+                                        <button onclick="openMoveTaskDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                            <i class="fas fa-arrow-right"></i>
+                                        </button>` : ''}
+                                        <button onclick="openDescriptionDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                            <i class="fas fa-comment"></i>
+                                        </button>
+                                        <button onclick="deleteTask('${date}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text} (${date})</span>
+                                </div>
+                                ${descriptionHtml}
+                            </div>
+                        `;
+                        searchResults.appendChild(taskEl);
+                    });
+                }
+            });
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('holidays', JSON.stringify(holidays));
+            saveToCloud();
+        }
+
+        function setupLiveSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchStartDate = document.getElementById('searchStartDate');
+            const searchEndDate = document.getElementById('searchEndDate');
+
+            const performSearch = () => {
+                searchTasks();
+            };
+
+            searchInput.addEventListener('input', performSearch);
+            searchStartDate.addEventListener('change', performSearch);
+            searchEndDate.addEventListener('change', performSearch);
+        }
+
+        function toggleSearchSection() {
+            const searchSection = document.getElementById('searchSection');
+            searchSection.classList.toggle('hidden');
+            if (!searchSection.classList.contains('hidden')) {
+                searchTasks();
+            }
+        }
+
+        function toggleSettingsPanel() {
+            const settingsPanel = document.getElementById('settingsPanel');
+            settingsPanel.classList.toggle('open');
+        }
+
+        function renderHolidaysList() {
+            const holidaysList = document.getElementById('holidaysList');
+            holidaysList.innerHTML = '';
+            
+            holidays.forEach((holiday, index) => {
+                const holidayItem = document.createElement('div');
+                holidayItem.className = 'holiday-item';
+                holidayItem.innerHTML = `
+                    <button onclick="removeHoliday(${index})" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <span class="holiday-date">${holiday}</span>
+                `;
+                holidaysList.appendChild(holidayItem);
+            });
+        }
+
+        function addHoliday() {
+            const newHolidayInput = document.getElementById('newHoliday');
+            const newHoliday = newHolidayInput.value.trim();
+            
+            if (newHoliday && !holidays.includes(newHoliday)) {
+                holidays.push(newHoliday);
+                saveTasks();
+                renderHolidaysList();
+                renderCalendar();
+                newHolidayInput.value = '';
+            }
+        }
+
+        function removeHoliday(index) {
+            holidays.splice(index, 1);
+            saveTasks();
+            renderHolidaysList();
+            renderCalendar();
+        }
+
+        function openHolidaysPicker() {
+            renderHolidaysPickerCalendar();
+            document.getElementById('holidaysPickerModal').style.display = 'flex';
+        }
+
+        function renderHolidaysPickerCalendar() {
+            const calendar = document.getElementById('holidaysPickerCalendar');
+            const monthYear = document.getElementById('holidayMonthYear');
+            calendar.innerHTML = '';
+
+            const daysOfWeek = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+            daysOfWeek.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = day;
+                dayEl.className = 'font-bold';
+                calendar.appendChild(dayEl);
+            });
+
+            const firstDayOfMonth = holidaysPickerDate.clone().startOf('month');
+            const lastDayOfMonth = holidaysPickerDate.clone().endOf('month');
+            const startDay = firstDayOfMonth.day();
+            const daysInMonth = lastDayOfMonth.date();
+
+            monthYear.textContent = holidaysPickerDate.format('MMMM YYYY');
+
+            for (let i = 0; i < (startDay + 6) % 7; i++) {
+                const emptyDay = document.createElement('div');
+                calendar.appendChild(emptyDay);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayEl = document.createElement('div');
+                const date = holidaysPickerDate.clone().date(i);
+                const dateStr = date.format('YYYY-MM-DD');
+                
+                dayEl.textContent = i;
+                dayEl.className = 'calendar-day';
+                
+                if (date.day() === 7) {
+                    dayEl.classList.add('text-red-500', 'font-bold');
+                }
+                
+                if (holidays.includes(dateStr)) {
+                    dayEl.classList.add('selected-holiday');
+                }
+                
+                dayEl.addEventListener('click', () => {
+                    const index = holidays.indexOf(dateStr);
+                    if (index === -1) {
+                        holidays.push(dateStr);
+                        dayEl.classList.add('selected-holiday');
+                    } else {
+                        holidays.splice(index, 1);
+                        dayEl.classList.remove('selected-holiday');
+                    }
+                });
+                
+                calendar.appendChild(dayEl);
+            }
+        }
+
+        function saveHolidays() {
+            saveTasks();
+            renderCalendar();
+            renderHolidaysList();
+            closeHolidaysPicker();
+        }
+
+        function closeHolidaysPicker() {
+            document.getElementById('holidaysPickerModal').style.display = 'none';
+        }
+
+        // رویدادهای کلیک
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentDate = currentDate.subtract('months', 1);
+            renderCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentDate = currentDate.add('months', 1);
+            renderCalendar();
+        });
+
+        document.getElementById('prevHolidayMonth').addEventListener('click', () => {
+            holidaysPickerDate = holidaysPickerDate.subtract('months', 1);
+            renderHolidaysPickerCalendar();
+        });
+
+        document.getElementById('nextHolidayMonth').addEventListener('click', () => {
+            holidaysPickerDate = holidaysPickerDate.add('months', 1);
+            renderHolidaysPickerCalendar();
+        });
+
+        document.getElementById('addTask').addEventListener('click', addTask);
+        document.getElementById('isRecurring').addEventListener('change', (e) => {
+            document.getElementById('recurringOptions').classList.toggle('hidden', !e.target.checked);
+        });
+        document.getElementById('moveToTomorrow').addEventListener('click', moveTaskToTomorrow);
+        document.getElementById('pickAnotherDate').addEventListener('click', showDatePickerCalendar);
+        document.getElementById('confirmDate').addEventListener('click', () => {
+            const newDateStr = document.getElementById('confirmDate').dataset.date;
+            if (newDateStr) {
+                moveTaskToDate(newDateStr);
+            }
+        });
+        document.getElementById('cancelDatePicker').addEventListener('click', closeDatePicker);
+        document.getElementById('searchToggle').addEventListener('click', toggleSearchSection);
+        document.getElementById('settingsToggle').addEventListener('click', toggleSettingsPanel);
+        document.getElementById('closeSettings').addEventListener('click', toggleSettingsPanel);
+        document.getElementById('addHoliday').addEventListener('click', addHoliday);
+        document.getElementById('openHolidaysPicker').addEventListener('click', openHolidaysPicker);
+        document.getElementById('saveHolidays').addEventListener('click', saveHolidays);
+        document.getElementById('cancelHolidaysPicker').addEventListener('click', closeHolidaysPicker);
+        document.getElementById('saveDescription').addEventListener('click', saveDescription);
+        document.getElementById('cancelDescription').addEventListener('click', closeDescriptionDialog);
+
+        // فونت فارسی
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://cdn.fontcdn.ir/Font/Persian/Vazir/Vazir.css';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
+
+        // بارگذاری اولیه داده‌ها
+        loadInitialData();
+        renderCalendar();
+        renderTasks();
+        setupLiveSearch();
+    </script>
+</body>
+</html>
