@@ -23,7 +23,7 @@
         }
         
         body { 
-            font-family: 'Vazir', sans-serif; 
+            font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background-color: #f7fafc;
         }
         
@@ -181,6 +181,7 @@
             transition: all 0.2s;
             border: none;
             outline: none;
+            font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .btn-primary {
             background-color: var(--primary);
@@ -321,6 +322,39 @@
             border-radius: 0.25rem;
         }
         
+        /* Task Stats */
+        .task-stats {
+            position: fixed;
+            bottom: 1rem;
+            left: 1rem;
+            background-color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            gap: 1.5rem;
+            z-index: 100;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-value {
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--secondary);
+        }
+        .completed-stat .stat-value {
+            color: var(--success);
+        }
+        .incomplete-stat .stat-value {
+            color: var(--danger);
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .grid-cols-1 {
@@ -328,6 +362,12 @@
             }
             .settings-panel {
                 width: 280px;
+            }
+            .task-stats {
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 0.5rem;
+                padding: 0.5rem 1rem;
             }
         }
         @media (min-width: 1024px) {
@@ -358,11 +398,11 @@
             <div class="bg-white p-4 rounded-lg shadow">
                 <div class="flex justify-between items-center mb-4">
                     <button id="prevMonth" class="btn btn-primary">
-                        <i class="fas fa-chevron-right"></i> ماه قبل
+                        <i class="fas fa-chevron-right mr-1"></i> ماه قبل
                     </button>
                     <h2 id="monthYear" class="text-lg font-bold"></h2>
                     <button id="nextMonth" class="btn btn-primary">
-                        ماه بعد <i class="fas fa-chevron-left"></i>
+                        ماه بعد <i class="fas fa-chevron-left ml-1"></i>
                     </button>
                 </div>
                 <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
@@ -418,6 +458,18 @@
         </div>
     </div>
 
+    <!-- آمار کارها -->
+    <div class="task-stats">
+        <div class="stat-item completed-stat">
+            <span class="stat-value" id="completedCount">0</span>
+            <span class="stat-label">انجام شده</span>
+        </div>
+        <div class="stat-item incomplete-stat">
+            <span class="stat-value" id="incompleteCount">0</span>
+            <span class="stat-label">انجام نشده</span>
+        </div>
+    </div>
+
     <!-- Date Picker Modal -->
     <div id="datePicker" class="modal-overlay">
         <div class="modal-content">
@@ -462,11 +514,11 @@
             <h3 class="text-lg font-bold mb-2">انتخاب روزهای تعطیل</h3>
             <div class="flex justify-between items-center mb-4">
                 <button id="prevHolidayMonth" class="btn btn-primary">
-                    <i class="fas fa-chevron-right"></i> ماه قبل
+                    <i class="fas fa-chevron-right mr-1"></i> ماه قبل
                 </button>
                 <h2 id="holidayMonthYear" class="text-lg font-bold"></h2>
                 <button id="nextHolidayMonth" class="btn btn-primary">
-                    ماه بعد <i class="fas fa-chevron-left"></i>
+                    ماه بعد <i class="fas fa-chevron-left ml-1"></i>
                 </button>
             </div>
             <div class="calendar-picker">
@@ -518,6 +570,7 @@
         let holidaysPickerDate = currentDate.clone();
         let moveTaskContext = { date: '', index: -1 };
         let descriptionContext = { date: '', index: -1 };
+        let recurringTasksMap = {}; // برای نگهداری کارهای تکراری
 
         // نمایش دایره چرخان
         function showLoading() {
@@ -554,6 +607,7 @@
                     renderCalendar();
                     renderTasks();
                     renderHolidaysList();
+                    updateTaskStats();
                 }
             } catch (error) {
                 console.error('Error loading initial data:', error);
@@ -688,6 +742,7 @@
                 });
             }
             renderIncompleteTasks();
+            updateTaskStats();
         }
 
         function renderIncompleteTasks() {
@@ -696,16 +751,34 @@
             
             // جمع‌آوری همه کارهای انجام نشده
             let allIncompleteTasks = [];
+            let uniqueRecurringTasks = new Set();
+            
             Object.keys(tasks).forEach(date => {
                 if (tasks[date] && Array.isArray(tasks[date])) {
                     tasks[date].forEach((task, index) => {
                         if (!task.completed) {
-                            allIncompleteTasks.push({
-                                date,
-                                index,
-                                task,
-                                persianDate: new persianDate(date)
-                            });
+                            // اگر کار تکراری است، فقط یک نمونه از آن را نمایش می‌دهیم
+                            if (task.recurring) {
+                                const taskKey = task.text + (task.recurring.type || '') + (task.recurring.interval || '');
+                                if (!uniqueRecurringTasks.has(taskKey)) {
+                                    uniqueRecurringTasks.add(taskKey);
+                                    allIncompleteTasks.push({
+                                        date,
+                                        index,
+                                        task,
+                                        persianDate: new persianDate(date),
+                                        isRecurring: true
+                                    });
+                                }
+                            } else {
+                                allIncompleteTasks.push({
+                                    date,
+                                    index,
+                                    task,
+                                    persianDate: new persianDate(date),
+                                    isRecurring: false
+                                });
+                            }
                         }
                     });
                 }
@@ -721,6 +794,10 @@
                 
                 const descriptionHtml = item.task.description ? 
                     `<div class="task-description">${item.task.description}</div>` : 
+                    '';
+                
+                const recurringBadge = item.isRecurring ? 
+                    '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">تکراری</span>' : 
                     '';
                 
                 taskEl.innerHTML = `
@@ -740,13 +817,34 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
-                            <span class="task-text">${item.task.text} (${item.date})</span>
+                            ${recurringBadge}
+                            <span class="task-text">${item.task.text} ${!item.isRecurring ? `(${item.date})` : ''}</span>
                         </div>
                         ${descriptionHtml}
                     </div>
                 `;
                 incompleteTasks.appendChild(taskEl);
             });
+        }
+
+        function updateTaskStats() {
+            let completedCount = 0;
+            let incompleteCount = 0;
+            
+            Object.keys(tasks).forEach(date => {
+                if (tasks[date] && Array.isArray(tasks[date])) {
+                    tasks[date].forEach(task => {
+                        if (task.completed) {
+                            completedCount++;
+                        } else {
+                            incompleteCount++;
+                        }
+                    });
+                }
+            });
+            
+            document.getElementById('completedCount').textContent = completedCount;
+            document.getElementById('incompleteCount').textContent = incompleteCount;
         }
 
         function toggleTask(index) {
@@ -996,6 +1094,7 @@
             localStorage.setItem('tasks', JSON.stringify(tasks));
             localStorage.setItem('holidays', JSON.stringify(holidays));
             saveToCloud();
+            updateTaskStats();
         }
 
         function setupLiveSearch() {
