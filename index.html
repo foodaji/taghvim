@@ -20,6 +20,13 @@
             --secondary-hover: #4b5563;
             --light: #f9fafb;
             --dark: #111827;
+            --user1: #f97316;  /* نارنجی */
+            --user1-hover: #ea580c;
+            --user2: #22c55e;  /* سبز */
+            --user2-hover: #16a34a;
+            --user3: #3b82f6;  /* آبی */
+            --user3-hover: #2563eb;
+            --user-mixed: #8b5cf6; /* بنفش برای ترکیب */
         }
         
         body { 
@@ -355,6 +362,155 @@
             color: var(--danger);
         }
         
+        /* User Colors */
+        .user1-bg {
+            background-color: var(--user1);
+            color: white;
+        }
+        .user2-bg {
+            background-color: var(--user2);
+            color: white;
+        }
+        .user3-bg {
+            background-color: var(--user3);
+            color: white;
+        }
+        .user-mixed-bg {
+            background: linear-gradient(90deg, var(--user1) 33%, var(--user2) 33%, var(--user2) 66%, var(--user3) 66%);
+            color: white;
+        }
+        
+        /* Shift Styles */
+        .shift-name {
+            font-size: 0.6rem;
+            margin-top: 0.2rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        /* Multiselect Styles */
+        .multiselect {
+            width: 100%;
+            position: relative;
+            margin-top: 0.5rem;
+        }
+        .select-box {
+            position: relative;
+        }
+        .select-box select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid #e5e7eb;
+            font-family: inherit;
+        }
+        .over-select {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+        #checkboxes {
+            display: none;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            background: white;
+            position: absolute;
+            width: 100%;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #checkboxes label {
+            display: block;
+            padding: 0.5rem;
+        }
+        #checkboxes label:hover {
+            background-color: #f3f4f6;
+        }
+        
+        /* Assignee Modal */
+        #assigneeModal .modal-content {
+            max-width: 300px;
+        }
+        .assignee-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        .assignee-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        /* Settings Sections */
+        .settings-section {
+            margin-bottom: 1rem;
+        }
+        .settings-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: var(--light);
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .settings-section-header i {
+            transition: transform 0.2s;
+        }
+        .settings-section-header.active i {
+            transform: rotate(90deg);
+        }
+        .settings-section-content {
+            padding: 0.75rem;
+            background-color: white;
+            border-radius: 0 0 0.25rem 0.25rem;
+            display: none;
+        }
+        .settings-section-content.active {
+            display: block;
+        }
+        
+        /* Toggle Incomplete Tasks */
+        .toggle-incomplete-tasks {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: var(--light);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+        .toggle-incomplete-tasks i {
+            transition: transform 0.2s;
+        }
+        .toggle-incomplete-tasks.active i {
+            transform: rotate(180deg);
+        }
+        
+        /* Toggle Assignee Tasks */
+        .toggle-assignee-tasks {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: var(--light);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+        .toggle-assignee-tasks i {
+            transition: transform 0.2s;
+        }
+        .toggle-assignee-tasks.active i {
+            transform: rotate(180deg);
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .grid-cols-1 {
@@ -427,6 +583,17 @@
                             <input id="recurringInterval" type="number" min="1" value="1" class="p-2 border rounded w-20" placeholder="فاصله">
                         </div>
                     </div>
+                    <div class="multiselect">
+                        <div class="select-box">
+                            <select id="assigneeSelect" multiple class="hidden">
+                                <!-- Options will be added dynamically -->
+                            </select>
+                            <div class="over-select"></div>
+                        </div>
+                        <div id="checkboxes">
+                            <!-- Checkboxes will be added dynamically -->
+                        </div>
+                    </div>
                     <button id="addTask" class="btn btn-success mt-2 w-full">
                         <i class="fas fa-plus mr-1"></i> افزودن
                     </button>
@@ -438,8 +605,26 @@
             <div>
                 <!-- کارهای انجام‌نشده -->
                 <div class="bg-white p-4 rounded-lg shadow mb-4">
-                    <h2 class="text-lg font-bold mb-4">کارهای انجام‌نشده</h2>
-                    <div id="incompleteTasks" class="mt-2"></div>
+                    <div class="toggle-incomplete-tasks" id="toggleIncompleteTasks">
+                        <h2 class="text-lg font-bold">کارهای انجام‌نشده</h2>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div id="incompleteTasks" class="mt-2 hidden"></div>
+                </div>
+                
+                <!-- کارهای اختصاص داده شده به همکاران -->
+                <div class="bg-white p-4 rounded-lg shadow mb-4">
+                    <div class="toggle-assignee-tasks" id="toggleAssigneeTasks">
+                        <h2 class="text-lg font-bold">کارهای اختصاص داده شده</h2>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div id="assigneeTasksSection" class="mt-2 hidden">
+                        <select id="assigneeFilter" class="w-full p-2 border rounded mb-2">
+                            <option value="">همه همکاران</option>
+                            <!-- Options will be added dynamically -->
+                        </select>
+                        <div id="assigneeTasks" class="mt-2"></div>
+                    </div>
                 </div>
                 
                 <!-- جستجو -->
@@ -475,8 +660,8 @@
         <div class="modal-content">
             <h3 class="text-lg font-bold mb-2">انتقال کار به تاریخ جدید</h3>
             <div class="mb-4">
-                <button id="moveToTomorrow" class="btn btn-primary mb-2 w-full">
-                    <i class="fas fa-arrow-right mr-1"></i> انتقال به فردا
+                <button id="moveToNextDay" class="btn btn-primary mb-2 w-full">
+                    <i class="fas fa-arrow-right mr-1"></i> انتقال به روز بعد
                 </button>
                 <button id="pickAnotherDate" class="btn btn-success w-full">
                     <i class="fas fa-calendar-alt mr-1"></i> انتخاب تاریخ دیگر
@@ -502,6 +687,24 @@
                     <i class="fas fa-save mr-1"></i> ذخیره
                 </button>
                 <button id="cancelDescription" class="btn btn-danger flex-1">
+                    <i class="fas fa-times mr-1"></i> انصراف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignee Modal -->
+    <div id="assigneeModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">اختصاص کار به همکاران</h3>
+            <div class="assignee-list" id="assigneeModalList">
+                <!-- Checkboxes will be added dynamically -->
+            </div>
+            <div class="flex gap-2">
+                <button id="saveAssignees" class="btn btn-success flex-1">
+                    <i class="fas fa-save mr-1"></i> ذخیره
+                </button>
+                <button id="cancelAssignee" class="btn btn-danger flex-1">
                     <i class="fas fa-times mr-1"></i> انصراف
                 </button>
             </div>
@@ -539,18 +742,81 @@
     <div id="settingsPanel" class="settings-panel">
         <h2 class="text-xl font-bold mb-4">تنظیمات</h2>
         
-        <h3 class="text-lg font-bold mb-2">تعطیلات رسمی</h3>
-        <button id="openHolidaysPicker" class="btn btn-primary mb-4 w-full">
-            <i class="fas fa-calendar-alt mr-1"></i> انتخاب از تقویم
-        </button>
-        <div id="holidaysList" class="mb-4">
-            <!-- Holidays will be added here dynamically -->
+        <div class="settings-section">
+            <div class="settings-section-header" id="teamMembersHeader">
+                <h3 class="text-lg font-bold">همکاران</h3>
+                <i class="fas fa-chevron-left"></i>
+            </div>
+            <div class="settings-section-content" id="teamMembersContent">
+                <div id="teamMembersList" class="mb-4">
+                    <!-- Team members will be added here dynamically -->
+                </div>
+                <div class="flex mb-4">
+                    <input id="newTeamMember" type="text" placeholder="نام همکار جدید" class="p-2 border rounded w-full">
+                    <button id="addTeamMember" class="btn btn-success mr-2">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="flex mb-4">
-            <input id="newHoliday" type="text" placeholder="YYYY-MM-DD" class="p-2 border rounded w-full">
-            <button id="addHoliday" class="btn btn-success mr-2">
-                <i class="fas fa-plus"></i>
-            </button>
+        
+        <div class="settings-section">
+            <div class="settings-section-header" id="shiftsHeader">
+                <h3 class="text-lg font-bold">تعریف شیفت‌ها</h3>
+                <i class="fas fa-chevron-left"></i>
+            </div>
+            <div class="settings-section-content" id="shiftsContent">
+                <div class="mb-4">
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">روز اول</label>
+                            <select id="shiftDay1" class="w-full p-2 border rounded">
+                                <!-- Options will be added dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">روز دوم</label>
+                            <select id="shiftDay2" class="w-full p-2 border rounded">
+                                <!-- Options will be added dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">روز سوم</label>
+                            <select id="shiftDay3" class="w-full p-2 border rounded">
+                                <!-- Options will be added dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-sm font-medium mb-1">تاریخ شروع</label>
+                        <input id="shiftStartDate" type="text" placeholder="YYYY-MM-DD" class="w-full p-2 border rounded">
+                    </div>
+                    <button id="saveShifts" class="btn btn-primary w-full">
+                        <i class="fas fa-save mr-1"></i> ذخیره شیفت‌ها
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-header" id="holidaysHeader">
+                <h3 class="text-lg font-bold">تعطیلات رسمی</h3>
+                <i class="fas fa-chevron-left"></i>
+            </div>
+            <div class="settings-section-content" id="holidaysContent">
+                <button id="openHolidaysPicker" class="btn btn-primary mb-4 w-full">
+                    <i class="fas fa-calendar-alt mr-1"></i> انتخاب از تقویم
+                </button>
+                <div id="holidaysList" class="mb-4">
+                    <!-- Holidays will be added here dynamically -->
+                </div>
+                <div class="flex mb-4">
+                    <input id="newHoliday" type="text" placeholder="YYYY-MM-DD" class="p-2 border rounded w-full">
+                    <button id="addHoliday" class="btn btn-success mr-2">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
         </div>
         
         <button id="closeSettings" class="btn btn-danger w-full">
@@ -565,11 +831,18 @@
 
         const tasks = JSON.parse(localStorage.getItem('tasks')) || {};
         let holidays = JSON.parse(localStorage.getItem('holidays')) || [];
+        let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳'];
+        let shifts = JSON.parse(localStorage.getItem('shifts')) || {
+            pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
+            startDate: new persianDate().format('YYYY-MM-DD')
+        };
+        
         let currentDate = new persianDate();
         let selectedDate = currentDate.clone();
         let holidaysPickerDate = currentDate.clone();
         let moveTaskContext = { date: '', index: -1 };
         let descriptionContext = { date: '', index: -1 };
+        let assigneeContext = { date: '', index: -1 };
         let recurringTasksMap = {}; // برای نگهداری کارهای تکراری
 
         // نمایش دایره چرخان
@@ -603,11 +876,18 @@
                         });
                     }
                     holidays = data.record.holidays || holidays;
+                    teamMembers = data.record.teamMembers || teamMembers;
+                    shifts = data.record.shifts || shifts;
+                    
                     saveTasks();
                     renderCalendar();
                     renderTasks();
                     renderHolidaysList();
+                    renderTeamMembersList();
+                    renderShiftSettings();
                     updateTaskStats();
+                    setupMultiselect();
+                    renderAssigneeFilter();
                 }
             } catch (error) {
                 console.error('Error loading initial data:', error);
@@ -626,7 +906,7 @@
                         'X-Master-Key': API_KEY,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ tasks, holidays })
+                    body: JSON.stringify({ tasks, holidays, teamMembers, shifts })
                 });
 
                 if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
@@ -641,6 +921,18 @@
         function isHoliday(date) {
             const dateStr = date.format('YYYY-MM-DD');
             return holidays.includes(dateStr);
+        }
+
+        function getShiftPerson(date) {
+            if (!shifts.pattern || shifts.pattern.length === 0 || !shifts.startDate) return null;
+            
+            const startDate = new persianDate(shifts.startDate);
+            const diffDays = date.diff(startDate, 'days');
+            
+            if (diffDays < 0) return null;
+            
+            const shiftIndex = diffDays % shifts.pattern.length;
+            return shifts.pattern[shiftIndex];
         }
 
         function renderCalendar() {
@@ -673,11 +965,13 @@
                 const date = currentDate.clone().date(i);
                 const dateStr = date.format('YYYY-MM-DD');
                 const taskCount = tasks[dateStr] ? tasks[dateStr].filter(task => !task.completed).length : 0;
+                const shiftPerson = getShiftPerson(date);
                 
                 dayEl.innerHTML = `
                     <div class="relative">
                         <span class="${date.day() === 7 ? 'text-red-500 font-bold' : 'text-blue'}">${i}</span>
                         ${taskCount > 0 ? `<span class="task-count-badge">${taskCount}</span>` : ''}
+                        ${shiftPerson ? `<div class="shift-name">${shiftPerson}</div>` : ''}
                     </div>
                 `;
                 
@@ -711,12 +1005,27 @@
                     const taskEl = document.createElement('div');
                     taskEl.className = 'task-item';
                     
+                    // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
+                    let bgClass = '';
+                    if (task.assignees && task.assignees.length > 0) {
+                        if (task.assignees.length === 1) {
+                            const userIndex = teamMembers.indexOf(task.assignees[0]);
+                            bgClass = `user${userIndex + 1}-bg`;
+                        } else {
+                            bgClass = 'user-mixed-bg';
+                        }
+                    }
+                    
                     const descriptionHtml = task.description ? 
                         `<div class="task-description">${task.description}</div>` : 
                         '';
                     
+                    const assigneesHtml = task.assignees && task.assignees.length > 0 ? 
+                        `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
+                        '';
+                    
                     taskEl.innerHTML = `
-                        <div class="w-full">
+                        <div class="w-full ${bgClass} p-2 rounded">
                             <div class="flex items-center">
                                 <div class="task-actions">
                                     <button onclick="toggleTask(${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
@@ -729,6 +1038,9 @@
                                     <button onclick="openDescriptionDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
                                         <i class="fas fa-comment"></i>
                                     </button>
+                                    <button onclick="openAssigneeDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                                        <i class="fas fa-users"></i>
+                                    </button>
                                     <button onclick="deleteTask('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -736,12 +1048,14 @@
                                 <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
                             </div>
                             ${descriptionHtml}
+                            ${assigneesHtml}
                         </div>
                     `;
                     taskList.appendChild(taskEl);
                 });
             }
             renderIncompleteTasks();
+            renderAssigneeTasks();
             updateTaskStats();
         }
 
@@ -784,13 +1098,24 @@
                 }
             });
             
-            // مرتب‌سازی بر اساس تاریخ
+            // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول)
             allIncompleteTasks.sort((a, b) => a.persianDate - b.persianDate);
             
             // نمایش کارها
             allIncompleteTasks.forEach(item => {
                 const taskEl = document.createElement('div');
                 taskEl.className = 'task-item';
+                
+                // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
+                let bgClass = '';
+                if (item.task.assignees && item.task.assignees.length > 0) {
+                    if (item.task.assignees.length === 1) {
+                        const userIndex = teamMembers.indexOf(item.task.assignees[0]);
+                        bgClass = `user${userIndex + 1}-bg`;
+                    } else {
+                        bgClass = 'user-mixed-bg';
+                    }
+                }
                 
                 const descriptionHtml = item.task.description ? 
                     `<div class="task-description">${item.task.description}</div>` : 
@@ -801,25 +1126,33 @@
                     '';
                 
                 taskEl.innerHTML = `
-                    <div class="w-full">
-                        <div class="flex items-center">
-                            <div class="task-actions">
-                                <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="انجام">
-                                    <i class="fas fa-circle"></i>
-                                </button>
-                                <button onclick="openMoveTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                                <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
-                                    <i class="fas fa-comment"></i>
-                                </button>
-                                <button onclick="deleteTask('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                    <div class="w-full ${bgClass} p-2 rounded">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="task-actions">
+                                    <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="انجام">
+                                        <i class="fas fa-circle"></i>
+                                    </button>
+                                    <button onclick="openMoveTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                    <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button onclick="openAssigneeDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                                        <i class="fas fa-users"></i>
+                                    </button>
+                                    <button onclick="deleteTask('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                ${recurringBadge}
+                                <span class="task-text">${item.task.text}</span>
                             </div>
-                            ${recurringBadge}
-                            <span class="task-text">${item.task.text} ${!item.isRecurring ? `(${item.date})` : ''}</span>
+                            <span class="text-xs text-gray-500">${item.date}</span>
                         </div>
+                        ${item.task.assignees && item.task.assignees.length > 0 ? 
+                            `<div class="text-xs mt-1">اختصاص داده شده به: ${item.task.assignees.join('، ')}</div>` : ''}
                         ${descriptionHtml}
                     </div>
                 `;
@@ -827,9 +1160,105 @@
             });
         }
 
+        function renderAssigneeTasks() {
+            const assigneeTasks = document.getElementById('assigneeTasks');
+            const selectedAssignee = document.getElementById('assigneeFilter').value;
+            assigneeTasks.innerHTML = '';
+            
+            // جمع‌آوری همه کارهای اختصاص داده شده
+            let allAssigneeTasks = [];
+            
+            Object.keys(tasks).forEach(date => {
+                if (tasks[date] && Array.isArray(tasks[date])) {
+                    tasks[date].forEach((task, index) => {
+                        if (task.assignees && task.assignees.length > 0) {
+                            if (!selectedAssignee || task.assignees.includes(selectedAssignee)) {
+                                allAssigneeTasks.push({
+                                    date,
+                                    index,
+                                    task,
+                                    persianDate: new persianDate(date)
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول)
+            allAssigneeTasks.sort((a, b) => a.persianDate - b.persianDate);
+            
+            // نمایش کارها
+            allAssigneeTasks.forEach(item => {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'task-item';
+                
+                // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
+                let bgClass = '';
+                if (item.task.assignees && item.task.assignees.length > 0) {
+                    if (item.task.assignees.length === 1) {
+                        const userIndex = teamMembers.indexOf(item.task.assignees[0]);
+                        bgClass = `user${userIndex + 1}-bg`;
+                    } else {
+                        bgClass = 'user-mixed-bg';
+                    }
+                }
+                
+                const descriptionHtml = item.task.description ? 
+                    `<div class="task-description">${item.task.description}</div>` : 
+                    '';
+                
+                const assigneesHtml = item.task.assignees && item.task.assignees.length > 0 ? 
+                    `<div class="text-xs mt-1">اختصاص داده شده به: ${item.task.assignees.join('، ')}</div>` : 
+                    '';
+                
+                taskEl.innerHTML = `
+                    <div class="w-full ${bgClass} p-2 rounded">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="task-actions">
+                                    <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm ${item.task.completed ? 'btn-success' : 'btn-secondary'}" title="${item.task.completed ? 'لغو انجام' : 'انجام'}">
+                                        <i class="fas ${item.task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                                    </button>
+                                    ${!item.task.completed ? `
+                                    <button onclick="openMoveTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>` : ''}
+                                    <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button onclick="deleteTask('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <span class="task-text ${item.task.completed ? 'line-through' : ''}">${item.task.text}</span>
+                            </div>
+                            <span class="text-xs text-gray-500">${item.date}</span>
+                        </div>
+                        ${descriptionHtml}
+                        ${assigneesHtml}
+                    </div>
+                `;
+                assigneeTasks.appendChild(taskEl);
+            });
+        }
+
+        function renderAssigneeFilter() {
+            const assigneeFilter = document.getElementById('assigneeFilter');
+            assigneeFilter.innerHTML = '<option value="">همه همکاران</option>';
+            
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member;
+                option.textContent = member;
+                assigneeFilter.appendChild(option);
+            });
+        }
+
         function updateTaskStats() {
             let completedCount = 0;
             let incompleteCount = 0;
+            let uniqueRecurringTasks = new Set();
             
             Object.keys(tasks).forEach(date => {
                 if (tasks[date] && Array.isArray(tasks[date])) {
@@ -837,7 +1266,16 @@
                         if (task.completed) {
                             completedCount++;
                         } else {
-                            incompleteCount++;
+                            // اگر کار تکراری است، فقط یک بار شمارش می‌کنیم
+                            if (task.recurring) {
+                                const taskKey = task.text + (task.recurring.type || '') + (task.recurring.interval || '');
+                                if (!uniqueRecurringTasks.has(taskKey)) {
+                                    uniqueRecurringTasks.add(taskKey);
+                                    incompleteCount++;
+                                }
+                            } else {
+                                incompleteCount++;
+                            }
                         }
                     });
                 }
@@ -885,17 +1323,17 @@
             document.getElementById('datePicker').style.display = 'flex';
             document.getElementById('datePickerCalendar').classList.add('hidden');
             document.getElementById('confirmDate').classList.add('hidden');
-            document.getElementById('moveToTomorrow').classList.remove('hidden');
+            document.getElementById('moveToNextDay').classList.remove('hidden');
             document.getElementById('pickAnotherDate').classList.remove('hidden');
         }
 
-        function moveTaskToTomorrow() {
-            const tomorrow = new persianDate(moveTaskContext.date).add('days', 1).format('YYYY-MM-DD');
-            moveTaskToDate(tomorrow);
+        function moveTaskToNextDay() {
+            const nextDay = new persianDate(moveTaskContext.date).add('days', 1).format('YYYY-MM-DD');
+            moveTaskToDate(nextDay);
         }
 
         function showDatePickerCalendar() {
-            document.getElementById('moveToTomorrow').classList.add('hidden');
+            document.getElementById('moveToNextDay').classList.add('hidden');
             document.getElementById('pickAnotherDate').classList.add('hidden');
             document.getElementById('datePickerCalendar').classList.remove('hidden');
             document.getElementById('confirmDate').classList.remove('hidden');
@@ -985,18 +1423,78 @@
             document.getElementById('descriptionModal').style.display = 'none';
         }
 
+        function openAssigneeDialog(date, index) {
+            assigneeContext = { date, index };
+            const task = tasks[date] && tasks[date][index];
+            if (task) {
+                const assigneeList = document.getElementById('assigneeModalList');
+                assigneeList.innerHTML = '';
+                
+                teamMembers.forEach(member => {
+                    const assigneeItem = document.createElement('div');
+                    assigneeItem.className = 'assignee-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `assignee-${member}`;
+                    checkbox.value = member;
+                    checkbox.checked = task.assignees && task.assignees.includes(member);
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `assignee-${member}`;
+                    label.textContent = member;
+                    label.style.marginRight = '0.5rem';
+                    
+                    assigneeItem.appendChild(checkbox);
+                    assigneeItem.appendChild(label);
+                    assigneeList.appendChild(assigneeItem);
+                });
+                
+                document.getElementById('assigneeModal').style.display = 'flex';
+            }
+        }
+
+        function saveAssignees() {
+            const assigneeList = document.getElementById('assigneeModalList');
+            const checkboxes = assigneeList.querySelectorAll('input[type="checkbox"]:checked');
+            const assignees = Array.from(checkboxes).map(checkbox => checkbox.value);
+            
+            if (tasks[assigneeContext.date] && tasks[assigneeContext.date][assigneeContext.index]) {
+                tasks[assigneeContext.date][assigneeContext.index].assignees = assignees;
+                saveTasks();
+                renderTasks();
+                closeAssigneeDialog();
+            }
+        }
+
+        function closeAssigneeDialog() {
+            document.getElementById('assigneeModal').style.display = 'none';
+        }
+
         function addTask() {
             const taskText = document.getElementById('taskInput').value;
             const isRecurring = document.getElementById('isRecurring').checked;
             const recurringType = document.getElementById('recurringType').value;
             const recurringInterval = parseInt(document.getElementById('recurringInterval').value) || 1;
+            
+            // دریافت افراد اختصاص داده شده
+            const assignees = [];
+            const checkboxes = document.querySelectorAll('#checkboxes input[type="checkbox"]:checked');
+            checkboxes.forEach(checkbox => {
+                assignees.push(checkbox.value);
+            });
 
             if (!taskText) return;
 
             const selectedDateStr = selectedDate.format('YYYY-MM-DD');
             if (!tasks[selectedDateStr]) tasks[selectedDateStr] = [];
 
-            const task = { text: taskText, completed: false };
+            const task = { 
+                text: taskText, 
+                completed: false,
+                assignees: assignees
+            };
+            
             if (isRecurring) {
                 task.recurring = { type: recurringType, interval: recurringInterval };
                 addRecurringTasks(task, selectedDateStr);
@@ -1008,6 +1506,10 @@
             document.getElementById('taskInput').value = '';
             document.getElementById('isRecurring').checked = false;
             document.getElementById('recurringOptions').classList.add('hidden');
+            // پاک کردن انتخاب افراد
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
             renderTasks();
             renderCalendar();
         }
@@ -1057,31 +1559,53 @@
                         const taskEl = document.createElement('div');
                         taskEl.className = 'task-item';
                         
+                        // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
+                        let bgClass = '';
+                        if (task.assignees && task.assignees.length > 0) {
+                            if (task.assignees.length === 1) {
+                                const userIndex = teamMembers.indexOf(task.assignees[0]);
+                                bgClass = `user${userIndex + 1}-bg`;
+                            } else {
+                                bgClass = 'user-mixed-bg';
+                            }
+                        }
+                        
                         const descriptionHtml = task.description ? 
                             `<div class="task-description">${task.description}</div>` : 
                             '';
                         
+                        const assigneesHtml = task.assignees && task.assignees.length > 0 ? 
+                            `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
+                            '';
+                        
                         taskEl.innerHTML = `
-                            <div class="w-full">
-                                <div class="flex items-center">
-                                    <div class="task-actions">
-                                        <button onclick="toggleTaskFromList('${date}', ${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
-                                            <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
-                                        </button>
-                                        ${!task.completed ? `
-                                        <button onclick="openMoveTaskDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
-                                            <i class="fas fa-arrow-right"></i>
-                                        </button>` : ''}
-                                        <button onclick="openDescriptionDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
-                                            <i class="fas fa-comment"></i>
-                                        </button>
-                                        <button onclick="deleteTask('${date}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                            <div class="w-full ${bgClass} p-2 rounded">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="task-actions">
+                                            <button onclick="toggleTaskFromList('${date}', ${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
+                                                <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                                            </button>
+                                            ${!task.completed ? `
+                                            <button onclick="openMoveTaskDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </button>` : ''}
+                                            <button onclick="openDescriptionDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                                <i class="fas fa-comment"></i>
+                                            </button>
+                                            <button onclick="openAssigneeDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                                                <i class="fas fa-users"></i>
+                                            </button>
+                                            <button onclick="deleteTask('${date}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
                                     </div>
-                                    <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text} (${date})</span>
+                                    <span class="text-xs text-gray-500">${date}</span>
                                 </div>
                                 ${descriptionHtml}
+                                ${assigneesHtml}
                             </div>
                         `;
                         searchResults.appendChild(taskEl);
@@ -1093,6 +1617,8 @@
         function saveTasks() {
             localStorage.setItem('tasks', JSON.stringify(tasks));
             localStorage.setItem('holidays', JSON.stringify(holidays));
+            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+            localStorage.setItem('shifts', JSON.stringify(shifts));
             saveToCloud();
             updateTaskStats();
         }
@@ -1124,6 +1650,43 @@
             settingsPanel.classList.toggle('open');
         }
 
+        function toggleIncompleteTasks() {
+            const incompleteTasks = document.getElementById('incompleteTasks');
+            const toggleBtn = document.getElementById('toggleIncompleteTasks');
+            
+            incompleteTasks.classList.toggle('hidden');
+            toggleBtn.classList.toggle('active');
+        }
+
+        function toggleAssigneeTasks() {
+            const assigneeTasksSection = document.getElementById('assigneeTasksSection');
+            const toggleBtn = document.getElementById('toggleAssigneeTasks');
+            
+            assigneeTasksSection.classList.toggle('hidden');
+            toggleBtn.classList.toggle('active');
+            
+            if (!assigneeTasksSection.classList.contains('hidden')) {
+                renderAssigneeTasks();
+            }
+        }
+
+        function toggleSettingsSection(sectionId) {
+            const header = document.getElementById(`${sectionId}Header`);
+            const content = document.getElementById(`${sectionId}Content`);
+            
+            // بستن همه بخش‌ها
+            document.querySelectorAll('.settings-section-content').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.querySelectorAll('.settings-section-header').forEach(h => {
+                h.classList.remove('active');
+            });
+            
+            // باز کردن بخش انتخاب شده
+            header.classList.add('active');
+            content.classList.add('active');
+        }
+
         function renderHolidaysList() {
             const holidaysList = document.getElementById('holidaysList');
             holidaysList.innerHTML = '';
@@ -1141,6 +1704,112 @@
             });
         }
 
+        function renderTeamMembersList() {
+            const teamMembersList = document.getElementById('teamMembersList');
+            teamMembersList.innerHTML = '';
+            
+            teamMembers.forEach((member, index) => {
+                const memberItem = document.createElement('div');
+                memberItem.className = 'holiday-item';
+                memberItem.innerHTML = `
+                    <button onclick="removeTeamMember(${index})" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <span class="holiday-date">${member}</span>
+                `;
+                teamMembersList.appendChild(memberItem);
+            });
+            
+            // به‌روزرسانی selectها برای شیفت‌ها
+            renderShiftSettings();
+            // به‌روزرسانی multiselect برای اختصاص کارها
+            setupMultiselect();
+            // به‌روزرسانی فیلتر همکاران
+            renderAssigneeFilter();
+        }
+
+        function renderShiftSettings() {
+            const shiftDay1 = document.getElementById('shiftDay1');
+            const shiftDay2 = document.getElementById('shiftDay2');
+            const shiftDay3 = document.getElementById('shiftDay3');
+            const shiftStartDate = document.getElementById('shiftStartDate');
+            
+            // پاک کردن گزینه‌های قبلی
+            shiftDay1.innerHTML = '';
+            shiftDay2.innerHTML = '';
+            shiftDay3.innerHTML = '';
+            
+            // اضافه کردن گزینه‌های جدید
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member;
+                option.textContent = member;
+                
+                shiftDay1.appendChild(option.cloneNode(true));
+                shiftDay2.appendChild(option.cloneNode(true));
+                shiftDay3.appendChild(option.cloneNode(true));
+            });
+            
+            // تنظیم مقادیر قبلی اگر وجود داشته باشد
+            if (shifts.pattern && shifts.pattern.length >= 3) {
+                shiftDay1.value = shifts.pattern[0] || '';
+                shiftDay2.value = shifts.pattern[1] || '';
+                shiftDay3.value = shifts.pattern[2] || '';
+            }
+            
+            if (shifts.startDate) {
+                shiftStartDate.value = shifts.startDate;
+            } else {
+                shiftStartDate.value = new persianDate().format('YYYY-MM-DD');
+            }
+        }
+
+        function saveShifts() {
+            const shiftDay1 = document.getElementById('shiftDay1').value;
+            const shiftDay2 = document.getElementById('shiftDay2').value;
+            const shiftDay3 = document.getElementById('shiftDay3').value;
+            const shiftStartDate = document.getElementById('shiftStartDate').value;
+            
+            if (!shiftDay1 || !shiftDay2 || !shiftDay3 || !shiftStartDate) {
+                alert('لطفاً تمام فیلدها را پر کنید');
+                return;
+            }
+            
+            shifts = {
+                pattern: [shiftDay1, shiftDay2, shiftDay3],
+                startDate: shiftStartDate
+            };
+            
+            saveTasks();
+            renderCalendar();
+            alert('شیفت‌ها با موفقیت ذخیره شدند');
+        }
+
+        function setupMultiselect() {
+            const multiselect = document.querySelector('.multiselect');
+            const selectBox = multiselect.querySelector('.select-box');
+            const overSelect = multiselect.querySelector('.over-select');
+            const checkboxes = multiselect.querySelector('#checkboxes');
+            
+            // پاک کردن چک‌باکس‌های قبلی
+            checkboxes.innerHTML = '';
+            
+            // اضافه کردن چک‌باکس‌های جدید برای هر همکار
+            teamMembers.forEach(member => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = member;
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(member));
+                checkboxes.appendChild(label);
+            });
+            
+            overSelect.addEventListener('click', function() {
+                checkboxes.style.display = checkboxes.style.display === 'block' ? 'none' : 'block';
+            });
+        }
+
         function addHoliday() {
             const newHolidayInput = document.getElementById('newHoliday');
             const newHoliday = newHolidayInput.value.trim();
@@ -1154,11 +1823,32 @@
             }
         }
 
+        function addTeamMember() {
+            const newMemberInput = document.getElementById('newTeamMember');
+            const newMember = newMemberInput.value.trim();
+            
+            if (newMember && !teamMembers.includes(newMember)) {
+                teamMembers.push(newMember);
+                saveTasks();
+                renderTeamMembersList();
+                newMemberInput.value = '';
+            }
+        }
+
         function removeHoliday(index) {
             holidays.splice(index, 1);
             saveTasks();
             renderHolidaysList();
             renderCalendar();
+        }
+
+        function removeTeamMember(index) {
+            if (confirm('آیا از حذف این همکار مطمئن هستید؟ این عمل ممکن است بر روی شیفت‌ها و کارهای اختصاص داده شده تأثیر بگذارد.')) {
+                teamMembers.splice(index, 1);
+                saveTasks();
+                renderTeamMembersList();
+                renderCalendar();
+            }
         }
 
         function openHolidaysPicker() {
@@ -1258,7 +1948,7 @@
         document.getElementById('isRecurring').addEventListener('change', (e) => {
             document.getElementById('recurringOptions').classList.toggle('hidden', !e.target.checked);
         });
-        document.getElementById('moveToTomorrow').addEventListener('click', moveTaskToTomorrow);
+        document.getElementById('moveToNextDay').addEventListener('click', moveTaskToNextDay);
         document.getElementById('pickAnotherDate').addEventListener('click', showDatePickerCalendar);
         document.getElementById('confirmDate').addEventListener('click', () => {
             const newDateStr = document.getElementById('confirmDate').dataset.date;
@@ -1271,11 +1961,23 @@
         document.getElementById('settingsToggle').addEventListener('click', toggleSettingsPanel);
         document.getElementById('closeSettings').addEventListener('click', toggleSettingsPanel);
         document.getElementById('addHoliday').addEventListener('click', addHoliday);
+        document.getElementById('addTeamMember').addEventListener('click', addTeamMember);
+        document.getElementById('saveShifts').addEventListener('click', saveShifts);
         document.getElementById('openHolidaysPicker').addEventListener('click', openHolidaysPicker);
         document.getElementById('saveHolidays').addEventListener('click', saveHolidays);
         document.getElementById('cancelHolidaysPicker').addEventListener('click', closeHolidaysPicker);
         document.getElementById('saveDescription').addEventListener('click', saveDescription);
         document.getElementById('cancelDescription').addEventListener('click', closeDescriptionDialog);
+        document.getElementById('saveAssignees').addEventListener('click', saveAssignees);
+        document.getElementById('cancelAssignee').addEventListener('click', closeAssigneeDialog);
+        document.getElementById('toggleIncompleteTasks').addEventListener('click', toggleIncompleteTasks);
+        document.getElementById('toggleAssigneeTasks').addEventListener('click', toggleAssigneeTasks);
+        document.getElementById('assigneeFilter').addEventListener('change', renderAssigneeTasks);
+        
+        // رویدادهای بخش تنظیمات
+        document.getElementById('teamMembersHeader').addEventListener('click', () => toggleSettingsSection('teamMembers'));
+        document.getElementById('shiftsHeader').addEventListener('click', () => toggleSettingsSection('shifts'));
+        document.getElementById('holidaysHeader').addEventListener('click', () => toggleSettingsSection('holidays'));
 
         // فونت فارسی
         const fontLink = document.createElement('link');
