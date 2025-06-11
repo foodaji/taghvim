@@ -20,13 +20,32 @@
             --secondary-hover: #4b5563;
             --light: #f9fafb;
             --dark: #111827;
+            
+            /* رنگ‌های همکاران */
             --user1: #f97316;  /* نارنجی */
             --user1-hover: #ea580c;
             --user2: #22c55e;  /* سبز */
             --user2-hover: #16a34a;
             --user3: #3b82f6;  /* آبی */
             --user3-hover: #2563eb;
-            --user-mixed: #8b5cf6; /* بنفش برای ترکیب */
+            --user4: #8b5cf6;  /* بنفش */
+            --user4-hover: #7c3aed;
+            --user5: #ec4899;  /* صورتی */
+            --user5-hover: #db2777;
+            --user6: #14b8a6;  /* فیروزه‌ای */
+            --user6-hover: #0d9488;
+            --user7: #f43f5e;  /* قرمز */
+            --user7-hover: #e11d48;
+            --user8: #10b981;  /* سبز */
+            --user8-hover: #059669;
+            --user9: #f59e0b;  /* زرد */
+            --user9-hover: #d97706;
+            --user10: #64748b; /* خاکستری */
+            --user10-hover: #475569;
+            --user11: #06b6d4; /* آبی فیروزه‌ای */
+            --user11-hover: #0891b2;
+            --user12: #a855f7; /* بنفش */
+            --user12-hover: #9333ea;
         }
         
         body { 
@@ -375,8 +394,40 @@
             background-color: var(--user3);
             color: white;
         }
-        .user-mixed-bg {
-            background: linear-gradient(90deg, var(--user1) 33%, var(--user2) 33%, var(--user2) 66%, var(--user3) 66%);
+        .user4-bg {
+            background-color: var(--user4);
+            color: white;
+        }
+        .user5-bg {
+            background-color: var(--user5);
+            color: white;
+        }
+        .user6-bg {
+            background-color: var(--user6);
+            color: white;
+        }
+        .user7-bg {
+            background-color: var(--user7);
+            color: white;
+        }
+        .user8-bg {
+            background-color: var(--user8);
+            color: white;
+        }
+        .user9-bg {
+            background-color: var(--user9);
+            color: white;
+        }
+        .user10-bg {
+            background-color: var(--user10);
+            color: white;
+        }
+        .user11-bg {
+            background-color: var(--user11);
+            color: white;
+        }
+        .user12-bg {
+            background-color: var(--user12);
             color: white;
         }
         
@@ -444,6 +495,46 @@
             align-items: center;
             padding: 0.5rem;
             border-bottom: 1px solid #e5e7eb;
+        }
+        
+        /* Note Styles */
+        .note-container {
+            margin-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+        .note-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            font-family: inherit;
+            margin-bottom: 0.5rem;
+        }
+        .note-content {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            white-space: pre-wrap;
+        }
+        
+        /* Search Options */
+        .search-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .search-option {
+            padding: 0.5rem 1rem;
+            background-color: #e5e7eb;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .search-option.active {
+            background-color: var(--primary);
+            color: white;
         }
         
         /* Settings Sections */
@@ -599,6 +690,16 @@
                     </button>
                 </div>
                 <div id="taskList" class="mt-4"></div>
+                
+                <!-- یادداشت روز -->
+                <div class="note-container">
+                    <h3 class="text-lg font-bold mb-2">یادداشت روز</h3>
+                    <textarea id="noteInput" class="note-textarea" placeholder="یادداشت خود را اینجا بنویسید..."></textarea>
+                    <button id="saveNote" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> ذخیره یادداشت
+                    </button>
+                    <div id="noteContent" class="note-content hidden"></div>
+                </div>
             </div>
 
             <!-- کارهای انجام‌نشده و جستجو -->
@@ -630,6 +731,10 @@
                 <!-- جستجو -->
                 <div id="searchSection" class="bg-white p-4 rounded-lg shadow hidden">
                     <h2 class="text-lg font-bold mb-4">جستجو</h2>
+                    <div class="search-options">
+                        <div class="search-option active" data-type="tasks">کارها</div>
+                        <div class="search-option" data-type="notes">یادداشتها</div>
+                    </div>
                     <div class="mb-4">
                         <input id="searchInput" type="text" placeholder="جستجوی کار یا توضیحات..." class="w-full p-2 border rounded mb-2">
                         <div class="flex gap-2">
@@ -830,8 +935,9 @@
         const API_KEY = "$2a$10$K0GxG/YDDvwcCOicoQSc3OIPqPpUflP5JvKxVStM6sdQYjq4LdXKi";
 
         const tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+        const notes = JSON.parse(localStorage.getItem('notes')) || {};
         let holidays = JSON.parse(localStorage.getItem('holidays')) || [];
-        let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳'];
+        let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
         let shifts = JSON.parse(localStorage.getItem('shifts')) || {
             pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
             startDate: new persianDate().format('YYYY-MM-DD')
@@ -844,6 +950,7 @@
         let descriptionContext = { date: '', index: -1 };
         let assigneeContext = { date: '', index: -1 };
         let recurringTasksMap = {}; // برای نگهداری کارهای تکراری
+        let searchType = 'tasks'; // 'tasks' یا 'notes'
 
         // نمایش دایره چرخان
         function showLoading() {
@@ -875,6 +982,11 @@
                             tasks[date] = data.record.tasks[date];
                         });
                     }
+                    if (data.record.notes) {
+                        Object.keys(data.record.notes).forEach(date => {
+                            notes[date] = data.record.notes[date];
+                        });
+                    }
                     holidays = data.record.holidays || holidays;
                     teamMembers = data.record.teamMembers || teamMembers;
                     shifts = data.record.shifts || shifts;
@@ -888,6 +1000,7 @@
                     updateTaskStats();
                     setupMultiselect();
                     renderAssigneeFilter();
+                    renderNote();
                 }
             } catch (error) {
                 console.error('Error loading initial data:', error);
@@ -906,7 +1019,7 @@
                         'X-Master-Key': API_KEY,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ tasks, holidays, teamMembers, shifts })
+                    body: JSON.stringify({ tasks, notes, holidays, teamMembers, shifts })
                 });
 
                 if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
@@ -924,10 +1037,11 @@
         }
 
         function getShiftPerson(date) {
-            if (!shifts.pattern || shifts.pattern.length === 0 || !shifts.startDate) return null;
+            if (!shifts.pattern || shifts.pattern.length === 0) return null;
             
-            const startDate = new persianDate(shifts.startDate);
-            const diffDays = date.diff(startDate, 'days');
+            // محاسبه اختلاف روز از امروز
+            const today = new persianDate().startOf('day');
+            const diffDays = date.diff(today, 'days');
             
             if (diffDays < 0) return null;
             
@@ -989,6 +1103,7 @@
                     selectedDate = currentDate.clone().date(i);
                     renderCalendar();
                     renderTasks();
+                    renderNote();
                 });
                 calendar.appendChild(dayEl);
             }
@@ -1007,12 +1122,10 @@
                     
                     // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
                     let bgClass = '';
-                    if (task.assignees && task.assignees.length > 0) {
-                        if (task.assignees.length === 1) {
-                            const userIndex = teamMembers.indexOf(task.assignees[0]);
+                    if (task.assignees && task.assignees.length === 1) {
+                        const userIndex = teamMembers.indexOf(task.assignees[0]);
+                        if (userIndex >= 0 && userIndex < 12) {
                             bgClass = `user${userIndex + 1}-bg`;
-                        } else {
-                            bgClass = 'user-mixed-bg';
                         }
                     }
                     
@@ -1057,6 +1170,35 @@
             renderIncompleteTasks();
             renderAssigneeTasks();
             updateTaskStats();
+        }
+
+        function renderNote() {
+            const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+            const noteInput = document.getElementById('noteInput');
+            const noteContent = document.getElementById('noteContent');
+            
+            noteInput.value = notes[selectedDateStr] || '';
+            
+            if (notes[selectedDateStr]) {
+                noteContent.textContent = notes[selectedDateStr];
+                noteContent.classList.remove('hidden');
+            } else {
+                noteContent.classList.add('hidden');
+            }
+        }
+
+        function saveNote() {
+            const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+            const noteInput = document.getElementById('noteInput');
+            
+            if (noteInput.value.trim()) {
+                notes[selectedDateStr] = noteInput.value.trim();
+            } else {
+                delete notes[selectedDateStr];
+            }
+            
+            saveTasks();
+            renderNote();
         }
 
         function renderIncompleteTasks() {
@@ -1108,12 +1250,10 @@
                 
                 // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
                 let bgClass = '';
-                if (item.task.assignees && item.task.assignees.length > 0) {
-                    if (item.task.assignees.length === 1) {
-                        const userIndex = teamMembers.indexOf(item.task.assignees[0]);
+                if (item.task.assignees && item.task.assignees.length === 1) {
+                    const userIndex = teamMembers.indexOf(item.task.assignees[0]);
+                    if (userIndex >= 0 && userIndex < 12) {
                         bgClass = `user${userIndex + 1}-bg`;
-                    } else {
-                        bgClass = 'user-mixed-bg';
                     }
                 }
                 
@@ -1165,13 +1305,13 @@
             const selectedAssignee = document.getElementById('assigneeFilter').value;
             assigneeTasks.innerHTML = '';
             
-            // جمع‌آوری همه کارهای اختصاص داده شده
+            // جمع‌آوری همه کارهای اختصاص داده شده و انجام نشده
             let allAssigneeTasks = [];
             
             Object.keys(tasks).forEach(date => {
                 if (tasks[date] && Array.isArray(tasks[date])) {
                     tasks[date].forEach((task, index) => {
-                        if (task.assignees && task.assignees.length > 0) {
+                        if (!task.completed && task.assignees && task.assignees.length > 0) {
                             if (!selectedAssignee || task.assignees.includes(selectedAssignee)) {
                                 allAssigneeTasks.push({
                                     date,
@@ -1195,12 +1335,10 @@
                 
                 // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
                 let bgClass = '';
-                if (item.task.assignees && item.task.assignees.length > 0) {
-                    if (item.task.assignees.length === 1) {
-                        const userIndex = teamMembers.indexOf(item.task.assignees[0]);
+                if (item.task.assignees && item.task.assignees.length === 1) {
+                    const userIndex = teamMembers.indexOf(item.task.assignees[0]);
+                    if (userIndex >= 0 && userIndex < 12) {
                         bgClass = `user${userIndex + 1}-bg`;
-                    } else {
-                        bgClass = 'user-mixed-bg';
                     }
                 }
                 
@@ -1217,13 +1355,12 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <div class="task-actions">
-                                    <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm ${item.task.completed ? 'btn-success' : 'btn-secondary'}" title="${item.task.completed ? 'لغو انجام' : 'انجام'}">
-                                        <i class="fas ${item.task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                                    <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="انجام">
+                                        <i class="fas fa-circle"></i>
                                     </button>
-                                    ${!item.task.completed ? `
                                     <button onclick="openMoveTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
                                         <i class="fas fa-arrow-right"></i>
-                                    </button>` : ''}
+                                    </button>
                                     <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
                                         <i class="fas fa-comment"></i>
                                     </button>
@@ -1231,7 +1368,7 @@
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
-                                <span class="task-text ${item.task.completed ? 'line-through' : ''}">${item.task.text}</span>
+                                <span class="task-text">${item.task.text}</span>
                             </div>
                             <span class="text-xs text-gray-500">${item.date}</span>
                         </div>
@@ -1543,79 +1680,105 @@
             const start = startDate ? new persianDate(startDate) : null;
             const end = endDate ? new persianDate(endDate) : null;
 
-            Object.keys(tasks).forEach(date => {
-                const taskDate = new persianDate(date);
-                if (start && taskDate.isBefore(start)) return;
-                if (end && taskDate.isAfter(end)) return;
+            if (searchType === 'tasks') {
+                // جستجو در کارها
+                Object.keys(tasks).forEach(date => {
+                    const taskDate = new persianDate(date);
+                    if (start && taskDate.isBefore(start)) return;
+                    if (end && taskDate.isAfter(end)) return;
 
-                if (tasks[date] && Array.isArray(tasks[date])) {
-                    tasks[date].forEach((task, index) => {
-                        const matchesText = searchInput && 
-                            (task.text.toLowerCase().includes(searchInput) || 
-                             (task.description && task.description.toLowerCase().includes(searchInput)));
-                        
-                        if (searchInput && !matchesText) return;
-                        
-                        const taskEl = document.createElement('div');
-                        taskEl.className = 'task-item';
-                        
-                        // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
-                        let bgClass = '';
-                        if (task.assignees && task.assignees.length > 0) {
-                            if (task.assignees.length === 1) {
+                    if (tasks[date] && Array.isArray(tasks[date])) {
+                        tasks[date].forEach((task, index) => {
+                            const matchesText = searchInput && 
+                                (task.text.toLowerCase().includes(searchInput) || 
+                                 (task.description && task.description.toLowerCase().includes(searchInput)));
+                            
+                            if (searchInput && !matchesText) return;
+                            
+                            const taskEl = document.createElement('div');
+                            taskEl.className = 'task-item';
+                            
+                            // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
+                            let bgClass = '';
+                            if (task.assignees && task.assignees.length === 1) {
                                 const userIndex = teamMembers.indexOf(task.assignees[0]);
-                                bgClass = `user${userIndex + 1}-bg`;
-                            } else {
-                                bgClass = 'user-mixed-bg';
+                                if (userIndex >= 0 && userIndex < 12) {
+                                    bgClass = `user${userIndex + 1}-bg`;
+                                }
                             }
-                        }
-                        
-                        const descriptionHtml = task.description ? 
-                            `<div class="task-description">${task.description}</div>` : 
-                            '';
-                        
-                        const assigneesHtml = task.assignees && task.assignees.length > 0 ? 
-                            `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
-                            '';
-                        
-                        taskEl.innerHTML = `
-                            <div class="w-full ${bgClass} p-2 rounded">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="task-actions">
-                                            <button onclick="toggleTaskFromList('${date}', ${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
-                                                <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
-                                            </button>
-                                            ${!task.completed ? `
-                                            <button onclick="openMoveTaskDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
-                                                <i class="fas fa-arrow-right"></i>
-                                            </button>` : ''}
-                                            <button onclick="openDescriptionDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
-                                                <i class="fas fa-comment"></i>
-                                            </button>
-                                            <button onclick="openAssigneeDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
-                                                <i class="fas fa-users"></i>
-                                            </button>
-                                            <button onclick="deleteTask('${date}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                            
+                            const descriptionHtml = task.description ? 
+                                `<div class="task-description">${task.description}</div>` : 
+                                '';
+                            
+                            const assigneesHtml = task.assignees && task.assignees.length > 0 ? 
+                                `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
+                                '';
+                            
+                            taskEl.innerHTML = `
+                                <div class="w-full ${bgClass} p-2 rounded">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="task-actions">
+                                                <button onclick="toggleTaskFromList('${date}', ${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
+                                                    <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                                                </button>
+                                                ${!task.completed ? `
+                                                <button onclick="openMoveTaskDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                                    <i class="fas fa-arrow-right"></i>
+                                                </button>` : ''}
+                                                <button onclick="openDescriptionDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                                    <i class="fas fa-comment"></i>
+                                                </button>
+                                                <button onclick="openAssigneeDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                                                    <i class="fas fa-users"></i>
+                                                </button>
+                                                <button onclick="deleteTask('${date}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                            <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
                                         </div>
-                                        <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
+                                        <span class="text-xs text-gray-500">${date}</span>
                                     </div>
-                                    <span class="text-xs text-gray-500">${date}</span>
+                                    ${descriptionHtml}
+                                    ${assigneesHtml}
                                 </div>
-                                ${descriptionHtml}
-                                ${assigneesHtml}
+                            `;
+                            searchResults.appendChild(taskEl);
+                        });
+                    }
+                });
+            } else {
+                // جستجو در یادداشتها
+                Object.keys(notes).forEach(date => {
+                    const noteDate = new persianDate(date);
+                    if (start && noteDate.isBefore(start)) return;
+                    if (end && noteDate.isAfter(end)) return;
+
+                    const noteContent = notes[date];
+                    if (searchInput && !noteContent.toLowerCase().includes(searchInput)) return;
+                    
+                    const noteEl = document.createElement('div');
+                    noteEl.className = 'task-item';
+                    noteEl.innerHTML = `
+                        <div class="w-full p-2 rounded">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="task-text">${noteContent}</span>
+                                </div>
+                                <span class="text-xs text-gray-500">${date}</span>
                             </div>
-                        `;
-                        searchResults.appendChild(taskEl);
-                    });
-                }
-            });
+                        </div>
+                    `;
+                    searchResults.appendChild(noteEl);
+                });
+            }
         }
 
         function saveTasks() {
             localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('notes', JSON.stringify(notes));
             localStorage.setItem('holidays', JSON.stringify(holidays));
             localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
             localStorage.setItem('shifts', JSON.stringify(shifts));
@@ -1757,27 +1920,22 @@
                 shiftDay3.value = shifts.pattern[2] || '';
             }
             
-            if (shifts.startDate) {
-                shiftStartDate.value = shifts.startDate;
-            } else {
-                shiftStartDate.value = new persianDate().format('YYYY-MM-DD');
-            }
+            shiftStartDate.value = new persianDate().format('YYYY-MM-DD');
         }
 
         function saveShifts() {
             const shiftDay1 = document.getElementById('shiftDay1').value;
             const shiftDay2 = document.getElementById('shiftDay2').value;
             const shiftDay3 = document.getElementById('shiftDay3').value;
-            const shiftStartDate = document.getElementById('shiftStartDate').value;
             
-            if (!shiftDay1 || !shiftDay2 || !shiftDay3 || !shiftStartDate) {
+            if (!shiftDay1 || !shiftDay2 || !shiftDay3) {
                 alert('لطفاً تمام فیلدها را پر کنید');
                 return;
             }
             
             shifts = {
                 pattern: [shiftDay1, shiftDay2, shiftDay3],
-                startDate: shiftStartDate
+                startDate: new persianDate().format('YYYY-MM-DD')
             };
             
             saveTasks();
@@ -1923,6 +2081,18 @@
             document.getElementById('holidaysPickerModal').style.display = 'none';
         }
 
+        function changeSearchType(type) {
+            searchType = type;
+            document.querySelectorAll('.search-option').forEach(option => {
+                if (option.dataset.type === type) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+            searchTasks();
+        }
+
         // رویدادهای کلیک
         document.getElementById('prevMonth').addEventListener('click', () => {
             currentDate = currentDate.subtract('months', 1);
@@ -1970,6 +2140,7 @@
         document.getElementById('cancelDescription').addEventListener('click', closeDescriptionDialog);
         document.getElementById('saveAssignees').addEventListener('click', saveAssignees);
         document.getElementById('cancelAssignee').addEventListener('click', closeAssigneeDialog);
+        document.getElementById('saveNote').addEventListener('click', saveNote);
         document.getElementById('toggleIncompleteTasks').addEventListener('click', toggleIncompleteTasks);
         document.getElementById('toggleAssigneeTasks').addEventListener('click', toggleAssigneeTasks);
         document.getElementById('assigneeFilter').addEventListener('change', renderAssigneeTasks);
@@ -1978,6 +2149,13 @@
         document.getElementById('teamMembersHeader').addEventListener('click', () => toggleSettingsSection('teamMembers'));
         document.getElementById('shiftsHeader').addEventListener('click', () => toggleSettingsSection('shifts'));
         document.getElementById('holidaysHeader').addEventListener('click', () => toggleSettingsSection('holidays'));
+
+        // رویدادهای جستجو
+        document.querySelectorAll('.search-option').forEach(option => {
+            option.addEventListener('click', () => {
+                changeSearchType(option.dataset.type);
+            });
+        });
 
         // فونت فارسی
         const fontLink = document.createElement('link');
