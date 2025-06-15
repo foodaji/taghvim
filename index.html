@@ -263,6 +263,11 @@
             display: flex;
             margin-right: auto;
             gap: 0.25rem;
+            display: none;
+        }
+        .task-item:hover .task-actions,
+        .task-actions.show-actions {
+            display: flex;
         }
         .task-text {
             flex: 1;
@@ -602,6 +607,53 @@
             transform: rotate(180deg);
         }
         
+        /* Priority Stars */
+        .priority-stars {
+            display: flex;
+            gap: 0.2rem;
+            margin-left: 0.5rem;
+        }
+        .priority-star {
+            color: #e5e7eb;
+            cursor: pointer;
+        }
+        .priority-star.active {
+            color: #f59e0b;
+        }
+        
+        /* Action Toggle */
+        .action-toggle {
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-right: 0.5rem;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            color: white;
+            z-index: 1000;
+            animation: fadeInOut 2s ease-in-out;
+            display: none;
+        }
+        .notification.success {
+            background-color: var(--success);
+        }
+        .notification.error {
+            background-color: var(--danger);
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; top: 0; }
+            10% { opacity: 1; top: 1rem; }
+            90% { opacity: 1; top: 1rem; }
+            100% { opacity: 0; top: 0; }
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .grid-cols-1 {
@@ -626,6 +678,7 @@
 </head>
 <body>
     <div class="loading-spinner" id="loadingSpinner"></div>
+    <div class="notification" id="notification"></div>
     
     <div class="container mx-auto">
         <div class="flex justify-between items-center mb-4">
@@ -653,6 +706,16 @@
                     </button>
                 </div>
                 <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
+                
+                <!-- یادداشت روز -->
+                <div class="note-container">
+                    <h3 class="text-lg font-bold mb-2">یادداشت روز</h3>
+                    <textarea id="noteInput" class="note-textarea" placeholder="یادداشت خود را اینجا بنویسید..."></textarea>
+                    <button id="saveNote" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> ذخیره یادداشت
+                    </button>
+                    <div id="noteContent" class="note-content hidden"></div>
+                </div>
             </div>
 
             <!-- مدیریت کارها -->
@@ -674,6 +737,15 @@
                             <input id="recurringInterval" type="number" min="1" value="1" class="p-2 border rounded w-20" placeholder="فاصله">
                         </div>
                     </div>
+                    <div class="mt-2">
+                        <label>اولویت:</label>
+                        <div class="priority-stars" id="priorityStars">
+                            <i class="fas fa-star priority-star" data-value="3"></i>
+                            <i class="fas fa-star priority-star" data-value="2"></i>
+                            <i class="fas fa-star priority-star" data-value="1"></i>
+                        </div>
+                        <input type="hidden" id="taskPriority" value="0">
+                    </div>
                     <div class="multiselect">
                         <div class="select-box">
                             <select id="assigneeSelect" multiple class="hidden">
@@ -690,16 +762,6 @@
                     </button>
                 </div>
                 <div id="taskList" class="mt-4"></div>
-                
-                <!-- یادداشت روز -->
-                <div class="note-container">
-                    <h3 class="text-lg font-bold mb-2">یادداشت روز</h3>
-                    <textarea id="noteInput" class="note-textarea" placeholder="یادداشت خود را اینجا بنویسید..."></textarea>
-                    <button id="saveNote" class="btn btn-primary">
-                        <i class="fas fa-save mr-1"></i> ذخیره یادداشت
-                    </button>
-                    <div id="noteContent" class="note-content hidden"></div>
-                </div>
             </div>
 
             <!-- کارهای انجام‌نشده و جستجو -->
@@ -772,6 +834,15 @@
                     <i class="fas fa-calendar-alt mr-1"></i> انتخاب تاریخ دیگر
                 </button>
             </div>
+            <div class="flex justify-between items-center mb-2">
+                <button id="prevPickerMonth" class="btn btn-primary">
+                    <i class="fas fa-chevron-right mr-1"></i> ماه قبل
+                </button>
+                <h2 id="pickerMonthYear" class="text-lg font-bold"></h2>
+                <button id="nextPickerMonth" class="btn btn-primary">
+                    ماه بعد <i class="fas fa-chevron-left ml-1"></i>
+                </button>
+            </div>
             <div id="datePickerCalendar" class="grid grid-cols-7 gap-1 text-center hidden"></div>
             <button id="confirmDate" class="btn btn-success mt-2 w-full hidden">
                 <i class="fas fa-check mr-1"></i> تایید
@@ -810,6 +881,31 @@
                     <i class="fas fa-save mr-1"></i> ذخیره
                 </button>
                 <button id="cancelAssignee" class="btn btn-danger flex-1">
+                    <i class="fas fa-times mr-1"></i> انصراف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editTaskModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">ویرایش کار</h3>
+            <input id="editTaskInput" type="text" class="w-full p-2 border rounded mb-2" placeholder="متن کار...">
+            <div class="mt-2">
+                <label>اولویت:</label>
+                <div class="priority-stars" id="editPriorityStars">
+                    <i class="fas fa-star priority-star" data-value="3"></i>
+                    <i class="fas fa-star priority-star" data-value="2"></i>
+                    <i class="fas fa-star priority-star" data-value="1"></i>
+                </div>
+                <input type="hidden" id="editTaskPriority" value="0">
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button id="saveEditTask" class="btn btn-success flex-1">
+                    <i class="fas fa-save mr-1"></i> ذخیره
+                </button>
+                <button id="cancelEditTask" class="btn btn-danger flex-1">
                     <i class="fas fa-times mr-1"></i> انصراف
                 </button>
             </div>
@@ -946,9 +1042,11 @@
         let currentDate = new persianDate();
         let selectedDate = currentDate.clone();
         let holidaysPickerDate = currentDate.clone();
+        let datePickerDate = currentDate.clone();
         let moveTaskContext = { date: '', index: -1 };
         let descriptionContext = { date: '', index: -1 };
         let assigneeContext = { date: '', index: -1 };
+        let editTaskContext = { date: '', index: -1 };
         let recurringTasksMap = {}; // برای نگهداری کارهای تکراری
         let searchType = 'tasks'; // 'tasks' یا 'notes'
 
@@ -960,6 +1058,18 @@
         // مخفی کردن دایره چرخان
         function hideLoading() {
             document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        // نمایش پیام
+        function showNotification(message, isSuccess = true) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
         }
 
         // بارگذاری اولیه داده‌ها از فضای ابری
@@ -1001,9 +1111,11 @@
                     setupMultiselect();
                     renderAssigneeFilter();
                     renderNote();
+                    showNotification('داده‌ها با موفقیت بارگذاری شدند');
                 }
             } catch (error) {
                 console.error('Error loading initial data:', error);
+                showNotification('خطا در بارگذاری داده‌ها', false);
             } finally {
                 hideLoading();
             }
@@ -1024,8 +1136,10 @@
 
                 if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
                 console.log('Data saved to cloud successfully');
+                showNotification('تغییرات با موفقیت ذخیره شد');
             } catch (error) {
                 console.error('Error saving to cloud:', error);
+                showNotification('خطا در ذخیره تغییرات', false);
             } finally {
                 hideLoading();
             }
@@ -1116,7 +1230,15 @@
 
             taskList.innerHTML = '';
             if (tasks[selectedDateStr] && Array.isArray(tasks[selectedDateStr])) {
-                tasks[selectedDateStr].forEach((task, index) => {
+                // مرتب‌سازی کارها بر اساس اولویت (بالاترین اولویت اول)
+                const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
+                    const priorityA = a.priority || 0;
+                    const priorityB = b.priority || 0;
+                    return priorityB - priorityA;
+                });
+                
+                sortedTasks.forEach((task, index) => {
+                    const originalIndex = tasks[selectedDateStr].indexOf(task);
                     const taskEl = document.createElement('div');
                     taskEl.className = 'task-item';
                     
@@ -1137,28 +1259,43 @@
                         `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
                         '';
                     
+                    // ایجاد ستاره‌های اولویت
+                    const priorityStars = [];
+                    for (let i = 3; i >= 1; i--) {
+                        priorityStars.push(`<i class="fas fa-star ${task.priority >= i ? 'text-yellow-500' : 'text-gray-300'}"></i>`);
+                    }
+                    
                     taskEl.innerHTML = `
                         <div class="w-full ${bgClass} p-2 rounded">
                             <div class="flex items-center">
+                                <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.task-actions').classList.toggle('show-actions')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </div>
                                 <div class="task-actions">
-                                    <button onclick="toggleTask(${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
+                                    <button onclick="toggleTask(${originalIndex})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
                                         <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
                                     </button>
                                     ${!task.completed ? `
-                                    <button onclick="openMoveTaskDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                                    <button onclick="openMoveTaskDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
                                         <i class="fas fa-arrow-right"></i>
                                     </button>` : ''}
-                                    <button onclick="openDescriptionDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                                    <button onclick="openDescriptionDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
                                         <i class="fas fa-comment"></i>
                                     </button>
-                                    <button onclick="openAssigneeDialog('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                                    <button onclick="openAssigneeDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
                                         <i class="fas fa-users"></i>
                                     </button>
-                                    <button onclick="deleteTask('${selectedDateStr}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                                    <button onclick="openEditTaskDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteTask('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-danger" title="حذف">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                                 <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
+                                <div class="priority-stars">
+                                    ${priorityStars.join('')}
+                                </div>
                             </div>
                             ${descriptionHtml}
                             ${assigneesHtml}
@@ -1199,6 +1336,7 @@
             
             saveTasks();
             renderNote();
+            showNotification('یادداشت با موفقیت ذخیره شد');
         }
 
         function renderIncompleteTasks() {
@@ -1240,8 +1378,13 @@
                 }
             });
             
-            // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول)
-            allIncompleteTasks.sort((a, b) => a.persianDate - b.persianDate);
+            // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول) و اولویت (بالاترین اولویت اول)
+            allIncompleteTasks.sort((a, b) => {
+                if (a.persianDate - b.persianDate !== 0) {
+                    return a.persianDate - b.persianDate;
+                }
+                return (b.task.priority || 0) - (a.task.priority || 0);
+            });
             
             // نمایش کارها
             allIncompleteTasks.forEach(item => {
@@ -1265,10 +1408,19 @@
                     '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">تکراری</span>' : 
                     '';
                 
+                // ایجاد ستاره‌های اولویت
+                const priorityStars = [];
+                for (let i = 3; i >= 1; i--) {
+                    priorityStars.push(`<i class="fas fa-star ${item.task.priority >= i ? 'text-yellow-500' : 'text-gray-300'}"></i>`);
+                }
+                
                 taskEl.innerHTML = `
                     <div class="w-full ${bgClass} p-2 rounded">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
+                                <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.task-actions').classList.toggle('show-actions')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </div>
                                 <div class="task-actions">
                                     <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="انجام">
                                         <i class="fas fa-circle"></i>
@@ -1282,12 +1434,18 @@
                                     <button onclick="openAssigneeDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
                                         <i class="fas fa-users"></i>
                                     </button>
+                                    <button onclick="openEditTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
                                     <button onclick="deleteTask('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                                 ${recurringBadge}
                                 <span class="task-text">${item.task.text}</span>
+                                <div class="priority-stars">
+                                    ${priorityStars.join('')}
+                                </div>
                             </div>
                             <span class="text-xs text-gray-500">${item.date}</span>
                         </div>
@@ -1325,8 +1483,13 @@
                 }
             });
             
-            // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول)
-            allAssigneeTasks.sort((a, b) => a.persianDate - b.persianDate);
+            // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول) و اولویت (بالاترین اولویت اول)
+            allAssigneeTasks.sort((a, b) => {
+                if (a.persianDate - b.persianDate !== 0) {
+                    return a.persianDate - b.persianDate;
+                }
+                return (b.task.priority || 0) - (a.task.priority || 0);
+            });
             
             // نمایش کارها
             allAssigneeTasks.forEach(item => {
@@ -1350,10 +1513,19 @@
                     `<div class="text-xs mt-1">اختصاص داده شده به: ${item.task.assignees.join('، ')}</div>` : 
                     '';
                 
+                // ایجاد ستاره‌های اولویت
+                const priorityStars = [];
+                for (let i = 3; i >= 1; i--) {
+                    priorityStars.push(`<i class="fas fa-star ${item.task.priority >= i ? 'text-yellow-500' : 'text-gray-300'}"></i>`);
+                }
+                
                 taskEl.innerHTML = `
                     <div class="w-full ${bgClass} p-2 rounded">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
+                                <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.task-actions').classList.toggle('show-actions')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </div>
                                 <div class="task-actions">
                                     <button onclick="toggleTaskFromList('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="انجام">
                                         <i class="fas fa-circle"></i>
@@ -1364,11 +1536,17 @@
                                     <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
                                         <i class="fas fa-comment"></i>
                                     </button>
+                                    <button onclick="openEditTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
                                     <button onclick="deleteTask('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                                 <span class="task-text">${item.task.text}</span>
+                                <div class="priority-stars">
+                                    ${priorityStars.join('')}
+                                </div>
                             </div>
                             <span class="text-xs text-gray-500">${item.date}</span>
                         </div>
@@ -1429,6 +1607,7 @@
                 saveTasks();
                 renderTasks();
                 renderCalendar();
+                showNotification('وضعیت کار با موفقیت تغییر کرد');
             }
         }
 
@@ -1438,6 +1617,7 @@
                 saveTasks();
                 renderTasks();
                 renderCalendar();
+                showNotification('وضعیت کار با موفقیت تغییر کرد');
             }
         }
 
@@ -1451,6 +1631,7 @@
                     saveTasks();
                     renderTasks();
                     renderCalendar();
+                    showNotification('کار با موفقیت حذف شد');
                 }
             }
         }
@@ -1475,7 +1656,12 @@
             document.getElementById('datePickerCalendar').classList.remove('hidden');
             document.getElementById('confirmDate').classList.remove('hidden');
             
+            renderDatePickerCalendar();
+        }
+
+        function renderDatePickerCalendar() {
             const calendar = document.getElementById('datePickerCalendar');
+            const monthYear = document.getElementById('pickerMonthYear');
             calendar.innerHTML = '';
             
             const daysOfWeek = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
@@ -1486,11 +1672,12 @@
                 calendar.appendChild(dayEl);
             });
             
-            const today = new persianDate();
-            const firstDayOfMonth = today.clone().startOf('month');
-            const lastDayOfMonth = today.clone().endOf('month');
+            const firstDayOfMonth = datePickerDate.clone().startOf('month');
+            const lastDayOfMonth = datePickerDate.clone().endOf('month');
             const startDay = firstDayOfMonth.day();
             const daysInMonth = lastDayOfMonth.date();
+            
+            monthYear.textContent = datePickerDate.format('MMMM YYYY');
             
             for (let i = 0; i < (startDay + 6) % 7; i++) {
                 const emptyDay = document.createElement('div');
@@ -1502,7 +1689,7 @@
                 dayEl.textContent = i;
                 dayEl.className = 'calendar-day';
                 
-                const date = today.clone().date(i);
+                const date = datePickerDate.clone().date(i);
                 if (date.day() === 7) {
                     dayEl.classList.add('text-red-500', 'font-bold');
                 }
@@ -1511,7 +1698,7 @@
                 }
                 
                 dayEl.addEventListener('click', () => {
-                    const selectedDay = today.clone().date(i);
+                    const selectedDay = datePickerDate.clone().date(i);
                     document.getElementById('confirmDate').dataset.date = selectedDay.format('YYYY-MM-DD');
                 });
                 
@@ -1531,6 +1718,7 @@
             renderTasks();
             renderCalendar();
             closeDatePicker();
+            showNotification('کار با موفقیت منتقل شد');
         }
 
         function closeDatePicker() {
@@ -1553,6 +1741,7 @@
                 saveTasks();
                 renderTasks();
                 closeDescriptionDialog();
+                showNotification('توضیحات با موفقیت ذخیره شد');
             }
         }
 
@@ -1601,6 +1790,7 @@
                 saveTasks();
                 renderTasks();
                 closeAssigneeDialog();
+                showNotification('تغییرات همکاران با موفقیت ذخیره شد');
             }
         }
 
@@ -1608,11 +1798,50 @@
             document.getElementById('assigneeModal').style.display = 'none';
         }
 
+        function openEditTaskDialog(date, index) {
+            editTaskContext = { date, index };
+            const task = tasks[date] && tasks[date][index];
+            if (task) {
+                document.getElementById('editTaskInput').value = task.text;
+                document.getElementById('editTaskPriority').value = task.priority || 0;
+                
+                // تنظیم ستاره‌های اولویت
+                const stars = document.querySelectorAll('#editPriorityStars .priority-star');
+                stars.forEach(star => {
+                    star.classList.remove('active');
+                    if (parseInt(star.dataset.value) <= (task.priority || 0)) {
+                        star.classList.add('active');
+                    }
+                });
+                
+                document.getElementById('editTaskModal').style.display = 'flex';
+            }
+        }
+
+        function saveEditTask() {
+            const newText = document.getElementById('editTaskInput').value;
+            const newPriority = parseInt(document.getElementById('editTaskPriority').value) || 0;
+            
+            if (tasks[editTaskContext.date] && tasks[editTaskContext.date][editTaskContext.index]) {
+                tasks[editTaskContext.date][editTaskContext.index].text = newText;
+                tasks[editTaskContext.date][editTaskContext.index].priority = newPriority;
+                saveTasks();
+                renderTasks();
+                closeEditTaskDialog();
+                showNotification('کار با موفقیت ویرایش شد');
+            }
+        }
+
+        function closeEditTaskDialog() {
+            document.getElementById('editTaskModal').style.display = 'none';
+        }
+
         function addTask() {
             const taskText = document.getElementById('taskInput').value;
             const isRecurring = document.getElementById('isRecurring').checked;
             const recurringType = document.getElementById('recurringType').value;
             const recurringInterval = parseInt(document.getElementById('recurringInterval').value) || 1;
+            const priority = parseInt(document.getElementById('taskPriority').value) || 0;
             
             // دریافت افراد اختصاص داده شده
             const assignees = [];
@@ -1621,7 +1850,10 @@
                 assignees.push(checkbox.value);
             });
 
-            if (!taskText) return;
+            if (!taskText) {
+                showNotification('لطفاً متن کار را وارد کنید', false);
+                return;
+            }
 
             const selectedDateStr = selectedDate.format('YYYY-MM-DD');
             if (!tasks[selectedDateStr]) tasks[selectedDateStr] = [];
@@ -1629,7 +1861,8 @@
             const task = { 
                 text: taskText, 
                 completed: false,
-                assignees: assignees
+                assignees: assignees,
+                priority: priority
             };
             
             if (isRecurring) {
@@ -1643,12 +1876,18 @@
             document.getElementById('taskInput').value = '';
             document.getElementById('isRecurring').checked = false;
             document.getElementById('recurringOptions').classList.add('hidden');
+            document.getElementById('taskPriority').value = 0;
+            // ریست ستاره‌های اولویت
+            document.querySelectorAll('#priorityStars .priority-star').forEach(star => {
+                star.classList.remove('active');
+            });
             // پاک کردن انتخاب افراد
             checkboxes.forEach(checkbox => {
                 checkbox.checked = false;
             });
             renderTasks();
             renderCalendar();
+            showNotification('کار با موفقیت اضافه شد');
         }
 
         function addRecurringTasks(task, startDateStr) {
@@ -1715,10 +1954,19 @@
                                 `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
                                 '';
                             
+                            // ایجاد ستاره‌های اولویت
+                            const priorityStars = [];
+                            for (let i = 3; i >= 1; i--) {
+                                priorityStars.push(`<i class="fas fa-star ${task.priority >= i ? 'text-yellow-500' : 'text-gray-300'}"></i>`);
+                            }
+                            
                             taskEl.innerHTML = `
                                 <div class="w-full ${bgClass} p-2 rounded">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center">
+                                            <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.task-actions').classList.toggle('show-actions')">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </div>
                                             <div class="task-actions">
                                                 <button onclick="toggleTaskFromList('${date}', ${index})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
                                                     <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
@@ -1733,11 +1981,17 @@
                                                 <button onclick="openAssigneeDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
                                                     <i class="fas fa-users"></i>
                                                 </button>
+                                                <button onclick="openEditTaskDialog('${date}', ${index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
                                                 <button onclick="deleteTask('${date}', ${index})" class="btn btn-icon btn-sm btn-danger" title="حذف">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
                                             <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
+                                            <div class="priority-stars">
+                                                ${priorityStars.join('')}
+                                            </div>
                                         </div>
                                         <span class="text-xs text-gray-500">${date}</span>
                                     </div>
@@ -1929,7 +2183,7 @@
             const shiftDay3 = document.getElementById('shiftDay3').value;
             
             if (!shiftDay1 || !shiftDay2 || !shiftDay3) {
-                alert('لطفاً تمام فیلدها را پر کنید');
+                showNotification('لطفاً تمام فیلدها را پر کنید', false);
                 return;
             }
             
@@ -1940,7 +2194,7 @@
             
             saveTasks();
             renderCalendar();
-            alert('شیفت‌ها با موفقیت ذخیره شدند');
+            showNotification('شیفت‌ها با موفقیت ذخیره شدند');
         }
 
         function setupMultiselect() {
@@ -1978,6 +2232,7 @@
                 renderHolidaysList();
                 renderCalendar();
                 newHolidayInput.value = '';
+                showNotification('تعطیلی با موفقیت اضافه شد');
             }
         }
 
@@ -1990,6 +2245,7 @@
                 saveTasks();
                 renderTeamMembersList();
                 newMemberInput.value = '';
+                showNotification('همکار با موفقیت اضافه شد');
             }
         }
 
@@ -1998,6 +2254,7 @@
             saveTasks();
             renderHolidaysList();
             renderCalendar();
+            showNotification('تعطیلی با موفقیت حذف شد');
         }
 
         function removeTeamMember(index) {
@@ -2006,6 +2263,7 @@
                 saveTasks();
                 renderTeamMembersList();
                 renderCalendar();
+                showNotification('همکار با موفقیت حذف شد');
             }
         }
 
@@ -2075,6 +2333,7 @@
             renderCalendar();
             renderHolidaysList();
             closeHolidaysPicker();
+            showNotification('تعطیلات با موفقیت ذخیره شدند');
         }
 
         function closeHolidaysPicker() {
@@ -2091,6 +2350,43 @@
                 }
             });
             searchTasks();
+        }
+
+        // تنظیم اولویت با ستاره‌ها
+        function setupPriorityStars() {
+            const stars = document.querySelectorAll('#priorityStars .priority-star');
+            stars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const value = parseInt(star.dataset.value);
+                    document.getElementById('taskPriority').value = value;
+                    
+                    // فعال کردن ستاره‌های انتخاب شده
+                    stars.forEach((s, i) => {
+                        if (i < value) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            const editStars = document.querySelectorAll('#editPriorityStars .priority-star');
+            editStars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const value = parseInt(star.dataset.value);
+                    document.getElementById('editTaskPriority').value = value;
+                    
+                    // فعال کردن ستاره‌های انتخاب شده
+                    editStars.forEach((s, i) => {
+                        if (i < value) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                });
+            });
         }
 
         // رویدادهای کلیک
@@ -2112,6 +2408,16 @@
         document.getElementById('nextHolidayMonth').addEventListener('click', () => {
             holidaysPickerDate = holidaysPickerDate.add('months', 1);
             renderHolidaysPickerCalendar();
+        });
+
+        document.getElementById('prevPickerMonth').addEventListener('click', () => {
+            datePickerDate = datePickerDate.subtract('months', 1);
+            renderDatePickerCalendar();
+        });
+
+        document.getElementById('nextPickerMonth').addEventListener('click', () => {
+            datePickerDate = datePickerDate.add('months', 1);
+            renderDatePickerCalendar();
         });
 
         document.getElementById('addTask').addEventListener('click', addTask);
@@ -2140,6 +2446,8 @@
         document.getElementById('cancelDescription').addEventListener('click', closeDescriptionDialog);
         document.getElementById('saveAssignees').addEventListener('click', saveAssignees);
         document.getElementById('cancelAssignee').addEventListener('click', closeAssigneeDialog);
+        document.getElementById('saveEditTask').addEventListener('click', saveEditTask);
+        document.getElementById('cancelEditTask').addEventListener('click', closeEditTaskDialog);
         document.getElementById('saveNote').addEventListener('click', saveNote);
         document.getElementById('toggleIncompleteTasks').addEventListener('click', toggleIncompleteTasks);
         document.getElementById('toggleAssigneeTasks').addEventListener('click', toggleAssigneeTasks);
@@ -2168,6 +2476,7 @@
         renderCalendar();
         renderTasks();
         setupLiveSearch();
+        setupPriorityStars();
     </script>
 </body>
 </html>
