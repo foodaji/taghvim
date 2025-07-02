@@ -292,11 +292,11 @@
             position: fixed;
             top: 0;
             right: -350px;
-            width: 350px;
+            width: 250px;
             height: 100%;
             background: white;
             box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-            transition: right 0.3s ease;
+            transition: right 1s ease;
             z-index: 1001;
             padding: 1.5rem;
             overflow-y: auto;
@@ -653,6 +653,36 @@
             100% { opacity: 0; top: 0; }
         }
         
+        /* Password Modal */
+        #passwordModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .password-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        .password-input {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            font-family: inherit;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .grid-cols-1 {
@@ -676,10 +706,22 @@
     </style>
 </head>
 <body>
+    <!-- Password Modal -->
+    <div id="passwordModal">
+        <div class="password-content">
+            <h2 class="text-xl font-bold mb-4">ورود به سررسید دیجیتال</h2>
+            <input type="password" id="passwordInput" class="password-input" placeholder="رمز عبور">
+            <button id="loginBtn" class="btn btn-primary w-full">
+                <i class="fas fa-sign-in-alt mr-1"></i> ورود
+            </button>
+            <div id="passwordError" class="text-red-500 text-sm mt-2 hidden">رمز عبور اشتباه است</div>
+        </div>
+    </div>
+
     <div class="loading-spinner" id="loadingSpinner"></div>
     <div class="notification" id="notification"></div>
     
-    <div class="container mx-auto">
+    <div class="container mx-auto" id="mainContent" style="display: none;">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-center">سررسید دیجیتال</h1>
             <div class="flex gap-2">
@@ -1019,6 +1061,27 @@
             </div>
         </div>
         
+        <div class="settings-section">
+            <div class="settings-section-header" id="passwordHeader">
+                <h3 class="text-lg font-bold">تغییر رمز عبور</h3>
+                <i class="fas fa-chevron-left"></i>
+            </div>
+            <div class="settings-section-content" id="passwordContent">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">رمز عبور فعلی</label>
+                    <input id="currentPassword" type="password" class="w-full p-2 border rounded mb-2">
+                    <label class="block text-sm font-medium mb-1">رمز عبور جدید</label>
+                    <input id="newPassword" type="password" class="w-full p-2 border rounded mb-2">
+                    <label class="block text-sm font-medium mb-1">تکرار رمز عبور جدید</label>
+                    <input id="confirmNewPassword" type="password" class="w-full p-2 border rounded">
+                </div>
+                <button id="changePassword" class="btn btn-primary w-full">
+                    <i class="fas fa-key mr-1"></i> تغییر رمز عبور
+                </button>
+                <div id="passwordChangeMessage" class="text-sm mt-2 hidden"></div>
+            </div>
+        </div>
+        
         <button id="closeSettings" class="btn btn-danger w-full">
             <i class="fas fa-times mr-1"></i> بستن تنظیمات
         </button>
@@ -1029,13 +1092,16 @@
         const API_URL = "https://api.jsonbin.io/v3/b/6843ffef8a456b7966aa6e9e";
         const API_KEY = "$2a$10$K0GxG/YDDvwcCOicoQSc3OIPqPpUflP5JvKxVStM6sdQYjq4LdXKi";
 
+        // رمز عبور پیش‌فرض
+        let appPassword = localStorage.getItem('appPassword') || "1234";
+        
         const tasks = JSON.parse(localStorage.getItem('tasks')) || {};
         const notes = JSON.parse(localStorage.getItem('notes')) || {};
         let holidays = JSON.parse(localStorage.getItem('holidays')) || [];
         let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
         let shifts = JSON.parse(localStorage.getItem('shifts')) || {
             pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
-            startDate: new persianDate().format('YYYY-MM-DD')
+            startDate:'۱۴۰۴-۰۴-۱۱' // تاریخ جدید به فرمت YYYY-MM-DD
         };
         
         let currentDate = new persianDate();
@@ -1124,17 +1190,28 @@
         async function saveToCloud() {
             showLoading();
             try {
+                const dataToSave = { 
+                    tasks, 
+                    notes, 
+                    holidays, 
+                    teamMembers, 
+                    shifts,
+                    appPassword
+                };
+
                 const response = await fetch(API_URL, {
                     method: 'PUT',
                     headers: {
                         'X-Master-Key': API_KEY,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ tasks, notes, holidays, teamMembers, shifts })
+                    body: JSON.stringify(dataToSave)
                 });
 
                 if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
-                console.log('Data saved to cloud successfully');
+                
+                const result = await response.json();
+                console.log('Data saved to cloud successfully:', result);
                 showNotification('تغییرات با موفقیت ذخیره شد');
             } catch (error) {
                 console.error('Error saving to cloud:', error);
@@ -1142,6 +1219,20 @@
             } finally {
                 hideLoading();
             }
+        }
+
+        // ذخیره داده‌ها در localStorage
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('notes', JSON.stringify(notes));
+            localStorage.setItem('holidays', JSON.stringify(holidays));
+            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+            localStorage.setItem('shifts', JSON.stringify(shifts));
+            localStorage.setItem('appPassword', appPassword);
+            updateTaskStats();
+            
+            // ذخیره در فضای ابری
+            saveToCloud();
         }
 
         function isHoliday(date) {
@@ -2048,15 +2139,6 @@
             }
         }
 
-        function saveTasks() {
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            localStorage.setItem('notes', JSON.stringify(notes));
-            localStorage.setItem('holidays', JSON.stringify(holidays));
-            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
-            localStorage.setItem('shifts', JSON.stringify(shifts));
-            updateTaskStats();
-        }
-
         function setupLiveSearch() {
             const searchInput = document.getElementById('searchInput');
             const searchStartDate = document.getElementById('searchStartDate');
@@ -2191,7 +2273,7 @@
                 shiftDay3.value = shifts.pattern[2] || '';
             }
             
-            shiftStartDate.value = new persianDate().format('YYYY-MM-DD');
+            shiftStartDate.value = shifts.startDate || '۱۴۰۴-۰۴-۱۱';
         }
 
         function saveShifts() {
@@ -2406,6 +2488,174 @@
             });
         }
 
+        // تابع ورود با رمز عبور
+        function login() {
+            const passwordInput = document.getElementById('passwordInput').value;
+            const errorElement = document.getElementById('passwordError');
+            
+            if (passwordInput === appPassword) {
+                document.getElementById('passwordModal').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } else {
+                errorElement.classList.remove('hidden');
+                errorElement.textContent = 'رمز عبور اشتباه است';
+            }
+        }
+
+
+   // اضافه کردن event listener برای کلید Enter
+    document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+
+   // تابع تغییر رمز عبور
+    function changePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+        const messageElement = document.getElementById('passwordChangeMessage');
+        
+        messageElement.classList.add('hidden');
+        
+        if (currentPassword !== appPassword) {
+            messageElement.textContent = 'رمز عبور فعلی اشتباه است';
+            messageElement.classList.remove('hidden');
+            messageElement.classList.remove('hidden');
+            messageElement.classList.add('text-red-500');
+            return;
+        }
+        
+        if (newPassword !== confirmNewPassword) {
+            messageElement.textContent = 'رمز عبور جدید و تکرار آن مطابقت ندارند';
+            messageElement.classList.remove('hidden');
+            messageElement.classList.add('text-red-500');
+            return;
+        }
+        
+        if (newPassword.length < 4) {
+            messageElement.textContent = 'رمز عبور باید حداقل 4 کاراکتر باشد';
+
+            messageElement.classList.add('text-red-500');
+            return;
+        }
+        
+        // ذخیره رمز جدید در متغیر و localStorage
+        appPassword = newPassword;
+        localStorage.setItem('appPassword', appPassword);
+        
+        // ذخیره در دیتابیس
+        saveToCloud().then(() => {
+            messageElement.textContent = 'رمز عبور با موفقیت تغییر کرد و در دیتابیس ذخیره شد';
+            messageElement.classList.remove('hidden');
+            messageElement.classList.remove('text-red-500');
+            messageElement.classList.add('text-green-500');
+            
+            // پاک کردن فیلدها
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+        }).catch(error => {
+            messageElement.textContent = 'خطا در ذخیره رمز عبور در دیتابیس';
+            messageElement.classList.remove('hidden');
+            messageElement.classList.add('text-red-500');
+            console.error('Error saving password:', error);
+        });
+    }
+
+    // تابع ذخیره در فضای ابری
+    async function saveToCloud() {
+        showLoading();
+        try {
+            const dataToSave = { 
+                tasks, 
+                notes, 
+                holidays, 
+                teamMembers, 
+                shifts,
+                appPassword // اضافه کردن رمز عبور به داده‌های ذخیره شده
+            };
+
+            const response = await fetch(API_URL, {
+                method: 'PUT',
+                headers: {
+                    'X-Master-Key': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataToSave)
+            });
+
+            if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
+            
+            const result = await response.json();
+            console.log('Data saved to cloud successfully:', result);
+            showNotification('تغییرات با موفقیت ذخیره شد');
+            return result;
+        } catch (error) {
+            console.error('Error saving to cloud:', error);
+            showNotification('خطا در ذخیره تغییرات', false);
+            throw error;
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // بارگذاری اولیه داده‌ها از فضای ابری
+    async function loadInitialData() {
+        showLoading();
+        try {
+            const response = await fetch(API_URL, {
+                headers: {
+                    'X-Master-Key': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error('خطا در بارگذاری داده‌ها');
+const data = await response.json();
+            if (data.record) {
+                if (data.record.tasks) {
+                    Object.keys(data.record.tasks).forEach(date => {
+                        tasks[date] = data.record.tasks[date];
+                    });
+                }
+                if (data.record.notes) {
+                    Object.keys(data.record.notes).forEach(date => {
+                        notes[date] = data.record.notes[date];
+                    });
+                }
+                holidays = data.record.holidays || holidays;
+                teamMembers = data.record.teamMembers || teamMembers;
+                shifts = data.record.shifts || shifts;
+                
+                // بارگذاری رمز عبور از دیتابیس (اگر وجود دارد)
+                if (data.record.appPassword) {
+                    appPassword = data.record.appPassword;
+                    localStorage.setItem('appPassword', appPassword);
+                }
+                
+                saveTasks();
+                renderCalendar();
+                renderTasks();
+                renderHolidaysList();
+                renderTeamMembersList();
+                renderShiftSettings();
+                updateTaskStats();
+                setupMultiselect();
+                renderAssigneeFilter();
+                renderNote();
+                showNotification('داده‌ها با موفقیت بارگذاری شدند');
+            }
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+            showNotification('خطا در بارگذاری داده‌ها', false);
+        } finally {
+            hideLoading();
+        }
+    }
+
+
         // رویدادهای کلیک
         document.getElementById('prevMonth').addEventListener('click', () => {
             currentDate = currentDate.subtract('months', 1);
@@ -2469,11 +2719,14 @@
         document.getElementById('toggleIncompleteTasks').addEventListener('click', toggleIncompleteTasks);
         document.getElementById('toggleAssigneeTasks').addEventListener('click', toggleAssigneeTasks);
         document.getElementById('assigneeFilter').addEventListener('change', renderAssigneeTasks);
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('changePassword').addEventListener('click', changePassword);
         
         // رویدادهای بخش تنظیمات
         document.getElementById('teamMembersHeader').addEventListener('click', () => toggleSettingsSection('teamMembers'));
         document.getElementById('shiftsHeader').addEventListener('click', () => toggleSettingsSection('shifts'));
         document.getElementById('holidaysHeader').addEventListener('click', () => toggleSettingsSection('holidays'));
+        document.getElementById('passwordHeader').addEventListener('click', () => toggleSettingsSection('password'));
 
         // رویدادهای جستجو
         document.querySelectorAll('.search-option').forEach(option => {
@@ -2494,6 +2747,10 @@
         renderTasks();
         setupLiveSearch();
         setupPriorityStars();
+        
+        // نمایش صفحه ورود
+        document.getElementById('passwordModal').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
     </script>
 </body>
 </html>
