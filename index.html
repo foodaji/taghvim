@@ -637,8 +637,9 @@
             border-radius: 0.5rem;
             color: white;
             z-index: 1000;
-            animation: fadeInOut 2s ease-in-out;
             display: none;
+            flex-direction: column;
+            align-items: flex-end;
         }
         .notification.success {
             background-color: var(--success);
@@ -646,11 +647,15 @@
         .notification.error {
             background-color: var(--danger);
         }
-        @keyframes fadeInOut {
-            0% { opacity: 0; top: 0; }
-            10% { opacity: 1; top: 1rem; }
-            90% { opacity: 1; top: 1rem; }
-            100% { opacity: 0; top: 0; }
+        .notification-content {
+            width: 100%;
+        }
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
         }
         
         /* Password Modal */
@@ -681,6 +686,29 @@
             border: 1px solid #e5e7eb;
             border-radius: 0.25rem;
             font-family: inherit;
+        }
+        
+        /* Equipment Styles */
+        .equipment-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: var(--light);
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+        }
+        .equipment-item:hover {
+            background-color: #e5e7eb;
+        }
+        .equipment-actions {
+            display: flex;
+            margin-right: auto;
+            gap: 0.25rem;
+            display: none;
+        }
+        .equipment-actions.show-actions {
+            display: flex;
         }
         
         /* Responsive */
@@ -719,7 +747,12 @@
     </div>
 
     <div class="loading-spinner" id="loadingSpinner"></div>
-    <div class="notification" id="notification"></div>
+    <div class="notification" id="notification">
+        <button class="notification-close" onclick="closeNotification()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="notification-content" id="notificationContent"></div>
+    </div>
     
     <div class="container mx-auto" id="mainContent" style="display: none;">
         <div class="flex justify-between items-center mb-4">
@@ -805,7 +838,7 @@
                 <div id="taskList" class="mt-4"></div>
             </div>
 
-            <!-- کارهای انجام‌نشده و جستجو -->
+            <!-- کارهای انجام‌نشده، لوازم مورد نیاز و جستجو -->
             <div>
                 <!-- کارهای انجام‌نشده -->
                 <div class="bg-white p-4 rounded-lg shadow mb-4">
@@ -829,6 +862,18 @@
                         </select>
                         <div id="assigneeTasks" class="mt-2"></div>
                     </div>
+                </div>
+                
+                <!-- لوازم مورد نیاز -->
+                <div class="bg-white p-4 rounded-lg shadow mb-4">
+                    <h2 class="text-lg font-bold mb-4">لوازم مورد نیاز</h2>
+                    <div class="mb-4">
+                        <input id="equipmentInput" type="text" placeholder="نام لوازم..." class="w-full p-2 border rounded mb-2">
+                        <button id="addEquipment" class="btn btn-success w-full">
+                            <i class="fas fa-plus mr-1"></i> افزودن
+                        </button>
+                    </div>
+                    <div id="equipmentList" class="mt-4"></div>
                 </div>
                 
                 <!-- جستجو -->
@@ -947,6 +992,22 @@
                     <i class="fas fa-save mr-1"></i> ذخیره
                 </button>
                 <button id="cancelEditTask" class="btn btn-danger flex-1">
+                    <i class="fas fa-times mr-1"></i> انصراف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Equipment Modal -->
+    <div id="editEquipmentModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">ویرایش لوازم</h3>
+            <input id="editEquipmentInput" type="text" class="w-full p-2 border rounded mb-2" placeholder="نام لوازم...">
+            <div class="flex gap-2 mt-4">
+                <button id="saveEditEquipment" class="btn btn-success flex-1">
+                    <i class="fas fa-save mr-1"></i> ذخیره
+                </button>
+                <button id="cancelEditEquipment" class="btn btn-danger flex-1">
                     <i class="fas fa-times mr-1"></i> انصراف
                 </button>
             </div>
@@ -1095,14 +1156,13 @@
         // رمز عبور پیش‌فرض
         let appPassword = localStorage.getItem('appPassword') || "1234";
         
-        const tasks = JSON.parse(localStorage.getItem('tasks')) || {};
-        const notes = JSON.parse(localStorage.getItem('notes')) || {};
-        let holidays = JSON.parse(localStorage.getItem('holidays')) || [];
-        let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
-        let shifts = JSON.parse(localStorage.getItem('shifts')) || {
-            pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
-            startDate:'۱۴۰۴-۰۴-۱۱' // تاریخ جدید به فرمت YYYY-MM-DD
-        };
+        // متغیرهای داده‌ها
+        let tasks = {};
+        let notes = {};
+        let holidays = [];
+        let teamMembers = [];
+        let shifts = {};
+        let equipmentList = [];
         
         let currentDate = new persianDate();
         let selectedDate = currentDate.clone();
@@ -1112,8 +1172,10 @@
         let descriptionContext = { date: '', index: -1 };
         let assigneeContext = { date: '', index: -1 };
         let editTaskContext = { date: '', index: -1 };
+        let editEquipmentIndex = -1;
         let recurringTasksMap = {}; // برای نگهداری کارهای تکراری
         let searchType = 'tasks'; // 'tasks' یا 'notes'
+        let lastError = null; // آخرین خطای رخ داده
 
         // نمایش دایره چرخان
         function showLoading() {
@@ -1126,15 +1188,33 @@
         }
 
         // نمایش پیام
-        function showNotification(message, isSuccess = true) {
+        function showNotification(message, isSuccess = true, errorDetails = null) {
             const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
-            notification.style.display = 'block';
+            const notificationContent = document.getElementById('notificationContent');
             
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 2000);
+            notificationContent.textContent = message;
+            notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
+            notification.style.display = 'flex';
+            
+            // اگر خطا بود، پیام را تا زمان بسته شدن توسط کاربر نمایش می‌دهیم
+            if (!isSuccess) {
+                lastError = {
+                    message: message,
+                    details: errorDetails
+                };
+            } else {
+                setTimeout(() => {
+                    if (notification.style.display !== 'none') {
+                        notification.style.display = 'none';
+                    }
+                }, 2000);
+            }
+        }
+
+        // بستن پیام
+        function closeNotification() {
+            document.getElementById('notification').style.display = 'none';
+            lastError = null;
         }
 
         // بارگذاری اولیه داده‌ها از فضای ابری
@@ -1152,21 +1232,33 @@
 
                 const data = await response.json();
                 if (data.record) {
-                    if (data.record.tasks) {
-                        Object.keys(data.record.tasks).forEach(date => {
-                            tasks[date] = data.record.tasks[date];
-                        });
-                    }
-                    if (data.record.notes) {
-                        Object.keys(data.record.notes).forEach(date => {
-                            notes[date] = data.record.notes[date];
-                        });
-                    }
-                    holidays = data.record.holidays || holidays;
-                    teamMembers = data.record.teamMembers || teamMembers;
-                    shifts = data.record.shifts || shifts;
+                    // بارگذاری داده‌ها از دیتابیس
+                    tasks = data.record.tasks || {};
+                    notes = data.record.notes || {};
+                    holidays = data.record.holidays || [];
+                    teamMembers = data.record.teamMembers || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
+                    shifts = data.record.shifts || {
+                        pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
+                        startDate: new persianDate().format('YYYY-MM-DD')
+                    };
+                    equipmentList = data.record.equipmentList || [];
                     
-                    saveTasks();
+                    // بارگذاری رمز عبور از دیتابیس (اگر وجود دارد)
+                    if (data.record.appPassword) {
+                        appPassword = data.record.appPassword;
+                        localStorage.setItem('appPassword', appPassword);
+                    }
+                    
+                    // ذخیره در localStorage فقط اگر داده‌ای وجود نداشته باشد
+                    if (!localStorage.getItem('tasks')) {
+                        localStorage.setItem('tasks', JSON.stringify(tasks));
+                        localStorage.setItem('notes', JSON.stringify(notes));
+                        localStorage.setItem('holidays', JSON.stringify(holidays));
+                        localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+                        localStorage.setItem('shifts', JSON.stringify(shifts));
+                        localStorage.setItem('equipment', JSON.stringify(equipmentList));
+                    }
+                    
                     renderCalendar();
                     renderTasks();
                     renderHolidaysList();
@@ -1176,11 +1268,34 @@
                     setupMultiselect();
                     renderAssigneeFilter();
                     renderNote();
+                    renderEquipmentList();
                     showNotification('داده‌ها با موفقیت بارگذاری شدند');
                 }
             } catch (error) {
                 console.error('Error loading initial data:', error);
-                showNotification('خطا در بارگذاری داده‌ها', false);
+                showNotification('خطا در بارگذاری داده‌ها', false, error.message);
+                
+                // اگر خطا در بارگذاری از دیتابیس رخ داد، از localStorage استفاده می‌کنیم
+                tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+                notes = JSON.parse(localStorage.getItem('notes')) || {};
+                holidays = JSON.parse(localStorage.getItem('holidays')) || [];
+                teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
+                shifts = JSON.parse(localStorage.getItem('shifts')) || {
+                    pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
+                    startDate: new persianDate().format('YYYY-MM-DD')
+                };
+                equipmentList = JSON.parse(localStorage.getItem('equipment')) || [];
+                
+                renderCalendar();
+                renderTasks();
+                renderHolidaysList();
+                renderTeamMembersList();
+                renderShiftSettings();
+                updateTaskStats();
+                setupMultiselect();
+                renderAssigneeFilter();
+                renderNote();
+                renderEquipmentList();
             } finally {
                 hideLoading();
             }
@@ -1196,6 +1311,7 @@
                     holidays, 
                     teamMembers, 
                     shifts,
+                    equipmentList,
                     appPassword
                 };
 
@@ -1213,9 +1329,11 @@
                 const result = await response.json();
                 console.log('Data saved to cloud successfully:', result);
                 showNotification('تغییرات با موفقیت ذخیره شد');
+                return result;
             } catch (error) {
                 console.error('Error saving to cloud:', error);
-                showNotification('خطا در ذخیره تغییرات', false);
+                showNotification('خطا در ذخیره تغییرات', false, error.message);
+                throw error;
             } finally {
                 hideLoading();
             }
@@ -1228,11 +1346,14 @@
             localStorage.setItem('holidays', JSON.stringify(holidays));
             localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
             localStorage.setItem('shifts', JSON.stringify(shifts));
+            localStorage.setItem('equipment', JSON.stringify(equipmentList));
             localStorage.setItem('appPassword', appPassword);
             updateTaskStats();
             
             // ذخیره در فضای ابری
-            saveToCloud();
+            saveToCloud().catch(error => {
+                console.error('Error saving to cloud:', error);
+            });
         }
 
         function isHoliday(date) {
@@ -1993,7 +2114,7 @@
                 showNotification('کار با موفقیت اضافه شد');
             } catch (error) {
                 console.error('Error adding task:', error);
-                showNotification('خطا در ذخیره کار', false);
+                showNotification('خطا در ذخیره کار', false, `افزودن کار "${taskText}" با شکست مواجه شد`);
             } finally {
                 hideLoading();
             }
@@ -2273,7 +2394,7 @@
                 shiftDay3.value = shifts.pattern[2] || '';
             }
             
-            shiftStartDate.value = shifts.startDate || '۱۴۰۴-۰۴-۱۱';
+            shiftStartDate.value = shifts.startDate || new persianDate().format('YYYY-MM-DD');
         }
 
         function saveShifts() {
@@ -2502,159 +2623,144 @@
             }
         }
 
-
-   // اضافه کردن event listener برای کلید Enter
-    document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            login();
-        }
-    });
-
-   // تابع تغییر رمز عبور
-    function changePassword() {
-        const currentPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-        const messageElement = document.getElementById('passwordChangeMessage');
-        
-        messageElement.classList.add('hidden');
-        
-        if (currentPassword !== appPassword) {
-            messageElement.textContent = 'رمز عبور فعلی اشتباه است';
-            messageElement.classList.remove('hidden');
-            messageElement.classList.remove('hidden');
-            messageElement.classList.add('text-red-500');
-            return;
-        }
-        
-        if (newPassword !== confirmNewPassword) {
-            messageElement.textContent = 'رمز عبور جدید و تکرار آن مطابقت ندارند';
-            messageElement.classList.remove('hidden');
-            messageElement.classList.add('text-red-500');
-            return;
-        }
-        
-        if (newPassword.length < 4) {
-            messageElement.textContent = 'رمز عبور باید حداقل 4 کاراکتر باشد';
-
-            messageElement.classList.add('text-red-500');
-            return;
-        }
-        
-        // ذخیره رمز جدید در متغیر و localStorage
-        appPassword = newPassword;
-        localStorage.setItem('appPassword', appPassword);
-        
-        // ذخیره در دیتابیس
-        saveToCloud().then(() => {
-            messageElement.textContent = 'رمز عبور با موفقیت تغییر کرد و در دیتابیس ذخیره شد';
-            messageElement.classList.remove('hidden');
-            messageElement.classList.remove('text-red-500');
-            messageElement.classList.add('text-green-500');
+        // تابع تغییر رمز عبور
+        function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            const messageElement = document.getElementById('passwordChangeMessage');
             
-            // پاک کردن فیلدها
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmNewPassword').value = '';
-        }).catch(error => {
-            messageElement.textContent = 'خطا در ذخیره رمز عبور در دیتابیس';
-            messageElement.classList.remove('hidden');
-            messageElement.classList.add('text-red-500');
-            console.error('Error saving password:', error);
-        });
-    }
-
-    // تابع ذخیره در فضای ابری
-    async function saveToCloud() {
-        showLoading();
-        try {
-            const dataToSave = { 
-                tasks, 
-                notes, 
-                holidays, 
-                teamMembers, 
-                shifts,
-                appPassword // اضافه کردن رمز عبور به داده‌های ذخیره شده
-            };
-
-            const response = await fetch(API_URL, {
-                method: 'PUT',
-                headers: {
-                    'X-Master-Key': API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(dataToSave)
-            });
-
-            if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
+            messageElement.classList.add('hidden');
             
-            const result = await response.json();
-            console.log('Data saved to cloud successfully:', result);
-            showNotification('تغییرات با موفقیت ذخیره شد');
-            return result;
-        } catch (error) {
-            console.error('Error saving to cloud:', error);
-            showNotification('خطا در ذخیره تغییرات', false);
-            throw error;
-        } finally {
-            hideLoading();
-        }
-    }
-
-    // بارگذاری اولیه داده‌ها از فضای ابری
-    async function loadInitialData() {
-        showLoading();
-        try {
-            const response = await fetch(API_URL, {
-                headers: {
-                    'X-Master-Key': API_KEY,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) throw new Error('خطا در بارگذاری داده‌ها');
-const data = await response.json();
-            if (data.record) {
-                if (data.record.tasks) {
-                    Object.keys(data.record.tasks).forEach(date => {
-                        tasks[date] = data.record.tasks[date];
-                    });
-                }
-                if (data.record.notes) {
-                    Object.keys(data.record.notes).forEach(date => {
-                        notes[date] = data.record.notes[date];
-                    });
-                }
-                holidays = data.record.holidays || holidays;
-                teamMembers = data.record.teamMembers || teamMembers;
-                shifts = data.record.shifts || shifts;
-                
-                // بارگذاری رمز عبور از دیتابیس (اگر وجود دارد)
-                if (data.record.appPassword) {
-                    appPassword = data.record.appPassword;
-                    localStorage.setItem('appPassword', appPassword);
-                }
-                
-                saveTasks();
-                renderCalendar();
-                renderTasks();
-                renderHolidaysList();
-                renderTeamMembersList();
-                renderShiftSettings();
-                updateTaskStats();
-                setupMultiselect();
-                renderAssigneeFilter();
-                renderNote();
-                showNotification('داده‌ها با موفقیت بارگذاری شدند');
+            if (currentPassword !== appPassword) {
+                messageElement.textContent = 'رمز عبور فعلی اشتباه است';
+                messageElement.classList.remove('hidden');
+                messageElement.classList.remove('hidden');
+                messageElement.classList.add('text-red-500');
+                return;
             }
-        } catch (error) {
-            console.error('Error loading initial data:', error);
-            showNotification('خطا در بارگذاری داده‌ها', false);
-        } finally {
-            hideLoading();
-        }
-    }
+            
+            if (newPassword !== confirmNewPassword) {
+                messageElement.textContent = 'رمز عبور جدید و تکرار آن مطابقت ندارند';
+                messageElement.classList.remove('hidden');
+                messageElement.classList.add('text-red-500');
+                return;
+            }
+            
+            if (newPassword.length < 4) {
+                messageElement.textContent = 'رمز عبور باید حداقل 4 کاراکتر باشد';
 
+                messageElement.classList.add('text-red-500');
+                return;
+            }
+            
+            // ذخیره رمز جدید در متغیر و localStorage
+            appPassword = newPassword;
+            localStorage.setItem('appPassword', appPassword);
+            
+            // ذخیره در دیتابیس
+            saveToCloud().then(() => {
+                messageElement.textContent = 'رمز عبور با موفقیت تغییر کرد و در دیتابیس ذخیره شد';
+                messageElement.classList.remove('hidden');
+                messageElement.classList.remove('text-red-500');
+                messageElement.classList.add('text-green-500');
+                
+                // پاک کردن فیلدها
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+            }).catch(error => {
+                messageElement.textContent = 'خطا در ذخیره رمز عبور در دیتابیس';
+                messageElement.classList.remove('hidden');
+                messageElement.classList.add('text-red-500');
+                console.error('Error saving password:', error);
+            });
+        }
+
+        // بخش مدیریت لوازم مورد نیاز
+        function renderEquipmentList() {
+            const equipmentListElement = document.getElementById('equipmentList');
+            equipmentListElement.innerHTML = '';
+            
+            equipmentList.forEach((equipment, index) => {
+                const equipmentItem = document.createElement('div');
+                equipmentItem.className = 'equipment-item';
+                
+                equipmentItem.innerHTML = `
+                    <div class="w-full p-2 rounded">
+                        <div class="flex items-center">
+                            <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.equipment-actions').classList.toggle('show-actions')">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </div>
+                            <div class="equipment-actions">
+                                <button onclick="openEditEquipmentDialog(${index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="markEquipmentAsPurchased(${index})" class="btn btn-icon btn-sm btn-success" title="خرید شد">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                            <span class="task-text">${equipment}</span>
+                        </div>
+                    </div>
+                `;
+                
+                equipmentListElement.appendChild(equipmentItem);
+            });
+        }
+
+        function addEquipment() {
+            const equipmentInput = document.getElementById('equipmentInput');
+            const equipmentName = equipmentInput.value.trim();
+            
+            if (!equipmentName) {
+                showNotification('لطفاً نام لوازم را وارد کنید', false);
+                return;
+            }
+            
+            equipmentList.push(equipmentName);
+            saveTasks();
+            renderEquipmentList();
+            equipmentInput.value = '';
+            showNotification('لوازم با موفقیت اضافه شد');
+        }
+
+        function openEditEquipmentDialog(index) {
+            editEquipmentIndex = index;
+            document.getElementById('editEquipmentInput').value = equipmentList[index];
+            document.getElementById('editEquipmentModal').style.display = 'flex';
+        }
+
+        function saveEditEquipment() {
+            const newName = document.getElementById('editEquipmentInput').value.trim();
+            
+            if (!newName) {
+                showNotification('لطفاً نام لوازم را وارد کنید', false);
+                return;
+            }
+            
+            if (editEquipmentIndex >= 0 && editEquipmentIndex < equipmentList.length) {
+                equipmentList[editEquipmentIndex] = newName;
+                saveTasks();
+                renderEquipmentList();
+                closeEditEquipmentDialog();
+                showNotification('لوازم با موفقیت ویرایش شد');
+            }
+        }
+
+        function closeEditEquipmentDialog() {
+            document.getElementById('editEquipmentModal').style.display = 'none';
+            editEquipmentIndex = -1;
+        }
+
+        function markEquipmentAsPurchased(index) {
+            if (confirm('آیا این لوازم خریداری شده است؟')) {
+                equipmentList.splice(index, 1);
+                saveTasks();
+                renderEquipmentList();
+                showNotification('وضعیت لوازم به "خریداری شده" تغییر کرد');
+            }
+        }
 
         // رویدادهای کلیک
         document.getElementById('prevMonth').addEventListener('click', () => {
@@ -2721,6 +2827,16 @@ const data = await response.json();
         document.getElementById('assigneeFilter').addEventListener('change', renderAssigneeTasks);
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('changePassword').addEventListener('click', changePassword);
+        document.getElementById('addEquipment').addEventListener('click', addEquipment);
+        document.getElementById('saveEditEquipment').addEventListener('click', saveEditEquipment);
+        document.getElementById('cancelEditEquipment').addEventListener('click', closeEditEquipmentDialog);
+        
+        // اضافه کردن رویداد Enter برای ورود
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
         
         // رویدادهای بخش تنظیمات
         document.getElementById('teamMembersHeader').addEventListener('click', () => toggleSettingsSection('teamMembers'));
