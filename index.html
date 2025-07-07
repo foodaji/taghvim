@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سررسید دیجیتال</title>
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -711,6 +712,34 @@
             display: flex;
         }
         
+        /* Backup Section */
+        .backup-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        .backup-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .backup-path {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+        }
+        .backup-status {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .backup-success {
+            color: var(--success);
+        }
+        .backup-error {
+            color: var(--danger);
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .grid-cols-1 {
@@ -1041,6 +1070,23 @@
         </div>
     </div>
 
+    <!-- Backup Modal -->
+    <div id="backupModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-2">بازیابی اطلاعات از فایل اکسل</h3>
+            <input type="file" id="backupFileInput" accept=".xlsx,.xls" class="w-full p-2 border rounded mb-4">
+            <div class="flex gap-2">
+                <button id="restoreBackup" class="btn btn-success flex-1">
+                    <i class="fas fa-upload mr-1"></i> بازیابی اطلاعات
+                </button>
+                <button id="cancelBackup" class="btn btn-danger flex-1">
+                    <i class="fas fa-times mr-1"></i> انصراف
+                </button>
+            </div>
+            <div id="backupStatus" class="backup-status mt-2 hidden"></div>
+        </div>
+    </div>
+
     <!-- Settings Panel -->
     <div id="settingsPanel" class="settings-panel">
         <h2 class="text-xl font-bold mb-4">تنظیمات</h2>
@@ -1123,6 +1169,40 @@
         </div>
         
         <div class="settings-section">
+            <div class="settings-section-header" id="backupHeader">
+                <h3 class="text-lg font-bold">پشتیبان‌گیری و بازیابی</h3>
+                <i class="fas fa-chevron-left"></i>
+            </div>
+            <div class="settings-section-content" id="backupContent">
+                <div class="backup-section">
+                    <h4 class="font-bold mb-2">پشتیبان‌گیری خودکار</h4>
+                    <div class="backup-controls">
+                        <button id="setBackupPath" class="btn btn-primary">
+                            <i class="fas fa-folder mr-1"></i> انتخاب مسیر ذخیره
+                        </button>
+                        <button id="createBackup" class="btn btn-success">
+                            <i class="fas fa-file-excel mr-1"></i> ایجاد پشتیبان
+                        </button>
+                    </div>
+                    <div class="backup-path" id="backupPathDisplay">
+                        مسیر ذخیره: <span id="backupPath">تنظیم نشده</span>
+                    </div>
+                    <div class="backup-status" id="lastBackupStatus">
+                        آخرین پشتیبان: <span id="lastBackupTime">هیچ پشتیبانی گرفته نشده</span>
+                    </div>
+                </div>
+                
+                <div class="backup-section">
+                    <h4 class="font-bold mb-2">بازیابی اطلاعات</h4>
+                    <button id="openBackupModal" class="btn btn-warning w-full">
+                        <i class="fas fa-upload mr-1"></i> بازیابی از فایل اکسل
+                    </button>
+                    <div class="backup-status hidden" id="restoreStatus"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
             <div class="settings-section-header" id="passwordHeader">
                 <h3 class="text-lg font-bold">تغییر رمز عبور</h3>
                 <i class="fas fa-chevron-left"></i>
@@ -1163,6 +1243,12 @@
         let teamMembers = [];
         let shifts = {};
         let equipmentList = [];
+        
+        // تنظیمات پشتیبان‌گیری
+        let backupSettings = JSON.parse(localStorage.getItem('backupSettings')) || {
+            backupPath: '',
+            lastBackupDate: null
+        };
         
         let currentDate = new persianDate();
         let selectedDate = currentDate.clone();
@@ -1249,6 +1335,12 @@
                         localStorage.setItem('appPassword', appPassword);
                     }
                     
+                    // بارگذاری تنظیمات پشتیبان‌گیری
+                    if (data.record.backupSettings) {
+                        backupSettings = data.record.backupSettings;
+                        localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
+                    }
+                    
                     // ذخیره در localStorage فقط اگر داده‌ای وجود نداشته باشد
                     if (!localStorage.getItem('tasks')) {
                         localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -1269,7 +1361,11 @@
                     renderAssigneeFilter();
                     renderNote();
                     renderEquipmentList();
+                    updateBackupUI();
                     showNotification('داده‌ها با موفقیت بارگذاری شدند');
+                    
+                    // بررسی نیاز به پشتیبان‌گیری خودکار
+                    checkAutoBackup();
                 }
             } catch (error) {
                 console.error('Error loading initial data:', error);
@@ -1285,6 +1381,10 @@
                     startDate: new persianDate().format('YYYY-MM-DD')
                 };
                 equipmentList = JSON.parse(localStorage.getItem('equipment')) || [];
+                backupSettings = JSON.parse(localStorage.getItem('backupSettings')) || {
+                    backupPath: '',
+                    lastBackupDate: null
+                };
                 
                 renderCalendar();
                 renderTasks();
@@ -1296,6 +1396,10 @@
                 renderAssigneeFilter();
                 renderNote();
                 renderEquipmentList();
+                updateBackupUI();
+                
+                // بررسی نیاز به پشتیبان‌گیری خودکار
+                checkAutoBackup();
             } finally {
                 hideLoading();
             }
@@ -1312,7 +1416,8 @@
                     teamMembers, 
                     shifts,
                     equipmentList,
-                    appPassword
+                    appPassword,
+                    backupSettings
                 };
 
                 const response = await fetch(API_URL, {
@@ -1348,6 +1453,7 @@
             localStorage.setItem('shifts', JSON.stringify(shifts));
             localStorage.setItem('equipment', JSON.stringify(equipmentList));
             localStorage.setItem('appPassword', appPassword);
+            localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
             updateTaskStats();
             
             // ذخیره در فضای ابری
@@ -1754,6 +1860,9 @@
                                     </button>
                                     <button onclick="openDescriptionDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
                                         <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button onclick="openAssigneeDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                                        <i class="fas fa-users"></i>
                                     </button>
                                     <button onclick="openEditTaskDialog('${item.date}', ${item.index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
                                         <i class="fas fa-edit"></i>
@@ -2762,6 +2871,298 @@
             }
         }
 
+        // بخش پشتیبان‌گیری و بازیابی
+        function updateBackupUI() {
+            const backupPathDisplay = document.getElementById('backupPath');
+            const lastBackupTimeDisplay = document.getElementById('lastBackupTime');
+            
+            backupPathDisplay.textContent = backupSettings.backupPath || 'تنظیم نشده';
+            
+            if (backupSettings.lastBackupDate) {
+                const lastBackupDate = new Date(backupSettings.lastBackupDate);
+                lastBackupTimeDisplay.textContent = lastBackupDate.toLocaleString('fa-IR');
+            } else {
+                lastBackupTimeDisplay.textContent = 'هیچ پشتیبانی گرفته نشده';
+            }
+        }
+
+        function setBackupPath() {
+            // در مرورگرهای مدرن می‌توان از showDirectoryPicker استفاده کرد
+            if ('showDirectoryPicker' in window) {
+                window.showDirectoryPicker()
+                    .then(directoryHandle => {
+                        // ذخیره مسیر دایرکتوری
+                        backupSettings.backupPath = directoryHandle.name;
+                        saveTasks();
+                        updateBackupUI();
+                        showNotification('مسیر ذخیره پشتیبان با موفقیت تنظیم شد');
+                    })
+                    .catch(error => {
+                        console.error('Error selecting directory:', error);
+                        showNotification('خطا در انتخاب مسیر ذخیره', false);
+                    });
+            } else {
+                // در مرورگرهای قدیمی از input file استفاده می‌کنیم
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.webkitdirectory = true;
+                input.multiple = false;
+                
+                input.onchange = (e) => {
+                    const files = e.target.files;
+                    if (files.length > 0) {
+                        backupSettings.backupPath = files[0].webkitRelativePath.split('/')[0];
+                        saveTasks();
+                        updateBackupUI();
+                        showNotification('مسیر ذخیره پشتیبان با موفقیت تنظیم شد');
+                    }
+                };
+                
+                input.click();
+            }
+        }
+
+        function createExcelBackup() {
+            if (!backupSettings.backupPath) {
+                showNotification('لطفاً ابتدا مسیر ذخیره پشتیبان را تنظیم کنید', false);
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                // ایجاد یک workbook جدید
+                const wb = XLSX.utils.book_new();
+                
+                // ایجاد sheet برای کارها
+                const tasksData = [];
+                Object.keys(tasks).forEach(date => {
+                    if (tasks[date] && Array.isArray(tasks[date])) {
+                        tasks[date].forEach(task => {
+                            tasksData.push({
+                                تاریخ: date,
+                                کار: task.text,
+                                وضعیت: task.completed ? 'انجام شده' : 'انجام نشده',
+                                اولویت: task.priority || 0,
+                                'تکرار شونده': task.recurring ? 'بله' : 'خیر',
+                                'نوع تکرار': task.recurring?.type || '',
+                                'فاصله تکرار': task.recurring?.interval || '',
+                                'اختصاص داده شده به': task.assignees?.join('، ') || '',
+                                توضیحات: task.description || ''
+                            });
+                        });
+                    }
+                });
+                
+                const tasksSheet = XLSX.utils.json_to_sheet(tasksData);
+                XLSX.utils.book_append_sheet(wb, tasksSheet, "کارها");
+                
+                // ایجاد sheet برای یادداشت‌ها
+                const notesData = Object.keys(notes).map(date => ({
+                    تاریخ: date,
+                    یادداشت: notes[date]
+                }));
+                
+                const notesSheet = XLSX.utils.json_to_sheet(notesData);
+                XLSX.utils.book_append_sheet(wb, notesSheet, "یادداشت‌ها");
+                
+                // ایجاد sheet برای تعطیلات
+                const holidaysSheet = XLSX.utils.json_to_sheet(holidays.map(date => ({
+                    تاریخ: date
+                })));
+                XLSX.utils.book_append_sheet(wb, holidaysSheet, "تعطیلات");
+                
+                // ایجاد sheet برای همکاران
+                const teamMembersSheet = XLSX.utils.json_to_sheet(teamMembers.map(member => ({
+                    همکار: member
+                })));
+                XLSX.utils.book_append_sheet(wb, teamMembersSheet, "همکاران");
+                
+                // ایجاد sheet برای شیفت‌ها
+                const shiftsSheet = XLSX.utils.json_to_sheet([{
+                    'روز اول': shifts.pattern?.[0] || '',
+                    'روز دوم': shifts.pattern?.[1] || '',
+                    'روز سوم': shifts.pattern?.[2] || '',
+                    'تاریخ شروع': shifts.startDate || ''
+                }]);
+                XLSX.utils.book_append_sheet(wb, shiftsSheet, "شیفت‌ها");
+                
+                // ایجاد sheet برای لوازم
+                const equipmentSheet = XLSX.utils.json_to_sheet(equipmentList.map(item => ({
+                    لوازم: item
+                })));
+                XLSX.utils.book_append_sheet(wb, equipmentSheet, "لوازم");
+                
+                // ایجاد فایل اکسل
+                const fileName = `سررسید_دیجیتال_${new persianDate().format('YYYY-MM-DD')}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                // ذخیره تاریخ آخرین پشتیبان
+                backupSettings.lastBackupDate = new Date().toISOString();
+                saveTasks();
+                updateBackupUI();
+                
+                showNotification('پشتیبان با موفقیت ایجاد شد');
+            } catch (error) {
+                console.error('Error creating backup:', error);
+                showNotification('خطا در ایجاد پشتیبان', false, error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function checkAutoBackup() {
+            // بررسی آیا امروز پشتیبان گرفته شده یا نه
+            const today = new persianDate().format('YYYY-MM-DD');
+            const lastBackupDate = backupSettings.lastBackupDate ? 
+                new persianDate(backupSettings.lastBackupDate).format('YYYY-MM-DD') : null;
+            
+            if (backupSettings.backupPath && lastBackupDate !== today) {
+                createExcelBackup();
+            }
+        }
+
+        function openBackupModal() {
+            document.getElementById('backupModal').style.display = 'flex';
+            document.getElementById('backupStatus').classList.add('hidden');
+        }
+
+        function closeBackupModal() {
+            document.getElementById('backupModal').style.display = 'none';
+        }
+
+        function restoreFromExcel() {
+            const fileInput = document.getElementById('backupFileInput');
+            const statusElement = document.getElementById('backupStatus');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showNotification('لطفاً یک فایل اکسل انتخاب کنید', false);
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    showLoading();
+                    statusElement.classList.add('hidden');
+                    
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // بازیابی کارها
+                    if (workbook.Sheets['کارها']) {
+                        const tasksData = XLSX.utils.sheet_to_json(workbook.Sheets['کارها']);
+                        tasks = {};
+                        
+                        tasksData.forEach(task => {
+                            if (!tasks[task.تاریخ]) tasks[task.تاریخ] = [];
+                            
+                            const newTask = {
+                                text: task.کار,
+                                completed: task.وضعیت === 'انجام شده',
+                                priority: task.اولویت || 0
+                            };
+                            
+                            if (task.توضیحات) {
+                                newTask.description = task.توضیحات;
+                            }
+                            
+                            if (task['اختصاص داده شده به']) {
+                                newTask.assignees = task['اختصاص داده شده به'].split('، ');
+                            }
+                            
+                            if (task['تکرار شونده'] === 'بله') {
+                                newTask.recurring = {
+                                    type: task['نوع تکرار'],
+                                    interval: task['فاصله تکرار']
+                                };
+                            }
+                            
+                            tasks[task.تاریخ].push(newTask);
+                        });
+                    }
+                    
+                    // بازیابی یادداشت‌ها
+                    if (workbook.Sheets['یادداشت‌ها']) {
+                        const notesData = XLSX.utils.sheet_to_json(workbook.Sheets['یادداشت‌ها']);
+                        notes = {};
+                        
+                        notesData.forEach(note => {
+                            if (note.یادداشت) {
+                                notes[note.تاریخ] = note.یادداشت;
+                            }
+                        });
+                    }
+                    
+                    // بازیابی تعطیلات
+                    if (workbook.Sheets['تعطیلات']) {
+                        const holidaysData = XLSX.utils.sheet_to_json(workbook.Sheets['تعطیلات']);
+                        holidays = holidaysData.map(item => item.تاریخ);
+                    }
+                    
+                    // بازیابی همکاران
+                    if (workbook.Sheets['همکاران']) {
+                        const teamMembersData = XLSX.utils.sheet_to_json(workbook.Sheets['همکاران']);
+                        teamMembers = teamMembersData.map(item => item.همکار);
+                    }
+                    
+                    // بازیابی شیفت‌ها
+                    if (workbook.Sheets['شیفت‌ها']) {
+                        const shiftsData = XLSX.utils.sheet_to_json(workbook.Sheets['شیفت‌ها']);
+                        if (shiftsData.length > 0) {
+                            shifts = {
+                                pattern: [
+                                    shiftsData[0]['روز اول'],
+                                    shiftsData[0]['روز دوم'],
+                                    shiftsData[0]['روز سوم']
+                                ].filter(Boolean),
+                                startDate: shiftsData[0]['تاریخ شروع'] || new persianDate().format('YYYY-MM-DD')
+                            };
+                        }
+                    }
+                    
+                    // بازیابی لوازم
+                    if (workbook.Sheets['لوازم']) {
+                        const equipmentData = XLSX.utils.sheet_to_json(workbook.Sheets['لوازم']);
+                        equipmentList = equipmentData.map(item => item.لوازم);
+                    }
+                    
+                    // ذخیره داده‌های بازیابی شده
+                    saveTasks();
+                    
+                    // رندر مجدد همه چیز
+                    renderCalendar();
+                    renderTasks();
+                    renderHolidaysList();
+                    renderTeamMembersList();
+                    renderShiftSettings();
+                    renderEquipmentList();
+                    updateBackupUI();
+                    
+                    statusElement.textContent = 'اطلاعات با موفقیت بازیابی شدند';
+                    statusElement.classList.remove('hidden');
+                    statusElement.classList.remove('backup-error');
+                    statusElement.classList.add('backup-success');
+                    
+                    showNotification('اطلاعات با موفقیت از فایل اکسل بازیابی شدند');
+                } catch (error) {
+                    console.error('Error restoring backup:', error);
+                    statusElement.textContent = 'خطا در بازیابی اطلاعات: ' + error.message;
+                    statusElement.classList.remove('hidden');
+                    statusElement.classList.remove('backup-success');
+                    statusElement.classList.add('backup-error');
+                    
+                    showNotification('خطا در بازیابی اطلاعات', false, error.message);
+                } finally {
+                    hideLoading();
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
         // رویدادهای کلیک
         document.getElementById('prevMonth').addEventListener('click', () => {
             currentDate = currentDate.subtract('months', 1);
@@ -2830,6 +3231,11 @@
         document.getElementById('addEquipment').addEventListener('click', addEquipment);
         document.getElementById('saveEditEquipment').addEventListener('click', saveEditEquipment);
         document.getElementById('cancelEditEquipment').addEventListener('click', closeEditEquipmentDialog);
+        document.getElementById('setBackupPath').addEventListener('click', setBackupPath);
+        document.getElementById('createBackup').addEventListener('click', createExcelBackup);
+        document.getElementById('openBackupModal').addEventListener('click', openBackupModal);
+        document.getElementById('restoreBackup').addEventListener('click', restoreFromExcel);
+        document.getElementById('cancelBackup').addEventListener('click', closeBackupModal);
         
         // اضافه کردن رویداد Enter برای ورود
         document.getElementById('passwordInput').addEventListener('keypress', (e) => {
@@ -2842,6 +3248,7 @@
         document.getElementById('teamMembersHeader').addEventListener('click', () => toggleSettingsSection('teamMembers'));
         document.getElementById('shiftsHeader').addEventListener('click', () => toggleSettingsSection('shifts'));
         document.getElementById('holidaysHeader').addEventListener('click', () => toggleSettingsSection('holidays'));
+        document.getElementById('backupHeader').addEventListener('click', () => toggleSettingsSection('backup'));
         document.getElementById('passwordHeader').addEventListener('click', () => toggleSettingsSection('password'));
 
         // رویدادهای جستجو
