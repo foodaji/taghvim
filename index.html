@@ -129,6 +129,23 @@
         .line-through { text-decoration: line-through; }
         
         /* Custom Styles */
+
+
+.goToToday {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background-color: var(--secondary);
+    color: white;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.goToToday:hover {
+    background-color: var(--secondary-hover);
+}
+
+
+
         .calendar-day { 
             padding: 0.5rem; 
             cursor: pointer; 
@@ -797,18 +814,24 @@
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <!-- تقویم -->
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <button id="prevMonth" class="btn btn-primary">
-                        <i class="fas fa-chevron-right mr-1"></i> ماه قبل
-                    </button>
-                    <h2 id="monthYear" class="text-lg font-bold"></h2>
-                    <button id="nextMonth" class="btn btn-primary">
-                        ماه بعد <i class="fas fa-chevron-left ml-1"></i>
-                    </button>
-                </div>
-                <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
+<!-- تقویم -->
+<div class="bg-white p-4 rounded-lg shadow">
+    <div class="flex justify-between items-center mb-4">
+        <button id="prevMonth" class="btn btn-primary">
+            <i class="fas fa-chevron-right mr-1"></i> ماه قبل
+        </button>
+        <h2 id="monthYear" class="text-lg font-bold"></h2>
+        <button id="nextMonth" class="btn btn-primary">
+            ماه بعد <i class="fas fa-chevron-left ml-1"></i>
+        </button>
+    </div>
+    <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
+    
+    <!-- دکمه برو به امروز -->
+  <button id="goToToday" class="btn btn-danger w-full mt-4">
+    <i class="fas fa-calendar-day mr-1"></i> برو به امروز
+</button>
+
                 
                 <!-- یادداشت روز -->
                 <div class="note-container">
@@ -1109,43 +1132,40 @@
             </div>
         </div>
         
-        <div class="settings-section">
-            <div class="settings-section-header" id="shiftsHeader">
-                <h3 class="text-lg font-bold">تعریف شیفت‌ها</h3>
-                <i class="fas fa-chevron-left"></i>
-            </div>
-            <div class="settings-section-content" id="shiftsContent">
-                <div class="mb-4">
-                    <div class="grid grid-cols-3 gap-2 mb-2">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">روز اول</label>
-                            <select id="shiftDay1" class="w-full p-2 border rounded">
-                                <!-- Options will be added dynamically -->
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">روز دوم</label>
-                            <select id="shiftDay2" class="w-full p-2 border rounded">
-                                <!-- Options will be added dynamically -->
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">روز سوم</label>
-                            <select id="shiftDay3" class="w-full p-2 border rounded">
-                                <!-- Options will be added dynamically -->
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">تاریخ شروع</label>
-                        <input id="shiftStartDate" type="text" placeholder="YYYY-MM-DD" class="w-full p-2 border rounded">
-                    </div>
-                    <button id="saveShifts" class="btn btn-primary w-full">
-                        <i class="fas fa-save mr-1"></i> ذخیره شیفت‌ها
-                    </button>
+<div class="settings-section">
+    <div class="settings-section-header" id="shiftsHeader">
+        <h3 class="text-lg font-bold">تعریف شیفت‌ها</h3>
+        <i class="fas fa-chevron-left"></i>
+    </div>
+    <div class="settings-section-content" id="shiftsContent">
+        <div class="mb-4">
+            <div class="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                    <label class="block text-sm font-medium mb-1">روز اول</label>
+                    <select id="shiftDay1" class="w-full p-2 border rounded">
+                        <!-- Options will be added dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">روز دوم</label>
+                    <select id="shiftDay2" class="w-full p-2 border rounded">
+                        <!-- Options will be added dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">روز سوم</label>
+                    <select id="shiftDay3" class="w-full p-2 border rounded">
+                        <!-- Options will be added dynamically -->
+                    </select>
                 </div>
             </div>
+            <button id="saveShifts" class="btn btn-primary w-full">
+                <i class="fas fa-save mr-1"></i> ذخیره شیفت‌ها
+            </button>
         </div>
+    </div>
+</div>
+
         
         <div class="settings-section">
             <div class="settings-section-header" id="holidaysHeader">
@@ -1272,6 +1292,16 @@
         function hideLoading() {
             document.getElementById('loadingSpinner').style.display = 'none';
         }
+
+function goToToday() {
+    currentDate = new persianDate();
+    selectedDate = currentDate.clone();
+    renderCalendar();
+    renderTasks();
+    renderNote();
+    showNotification('امروز نمایش داده شد');
+}
+
 
         // نمایش پیام
         function showNotification(message, isSuccess = true, errorDetails = null) {
@@ -1467,18 +1497,20 @@
             return holidays.includes(dateStr);
         }
 
-        function getShiftPerson(date) {
-            if (!shifts.pattern || shifts.pattern.length === 0) return null;
-            
-            // محاسبه اختلاف روز از امروز
-            const today = new persianDate().startOf('day');
-            const diffDays = date.diff(today, 'days');
-            
-            if (diffDays < 0) return null;
-            
-            const shiftIndex = diffDays % shifts.pattern.length;
-            return shifts.pattern[shiftIndex];
-        }
+  function getShiftPerson(date) {
+    if (!shifts.pattern || shifts.pattern.length === 0) return null;
+    
+    // تاریخ شروع شیفت‌ها (1 تیر 1404)
+    const startDate = new persianDate('1404-04-01').startOf('day');
+    
+    // محاسبه اختلاف روز از تاریخ شروع
+    const diffDays = date.diff(startDate, 'days');
+    
+    if (diffDays < 0) return null;
+    
+    const shiftIndex = diffDays % shifts.pattern.length;
+    return shifts.pattern[shiftIndex];
+}
 
         function renderCalendar() {
             const calendar = document.getElementById('calendar');
@@ -1505,39 +1537,41 @@
                 calendar.appendChild(emptyDay);
             }
 
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dayEl = document.createElement('div');
-                const date = currentDate.clone().date(i);
-                const dateStr = date.format('YYYY-MM-DD');
-                const taskCount = tasks[dateStr] ? tasks[dateStr].filter(task => !task.completed).length : 0;
-                const shiftPerson = getShiftPerson(date);
-                
-                dayEl.innerHTML = `
-                    <div class="relative">
-                        <span class="${date.day() === 7 ? 'text-red-500 font-bold' : 'text-blue'}">${i}</span>
-                        ${taskCount > 0 ? `<span class="task-count-badge">${taskCount}</span>` : ''}
-                        ${shiftPerson ? `<div class="shift-name">${shiftPerson}</div>` : ''}
-                    </div>
-                `;
-                
-                dayEl.className = 'calendar-day';
-                
-                if (isHoliday(date)) {
-                    dayEl.classList.add('holiday');
-                }
-                
-                if (i === selectedDate.date() && currentDate.month() === selectedDate.month() && currentDate.year() === selectedDate.year()) {
-                    dayEl.classList.add('selected-day');
-                }
-                
-                dayEl.addEventListener('click', () => {
-                    selectedDate = currentDate.clone().date(i);
-                    renderCalendar();
-                    renderTasks();
-                    renderNote();
-                });
-                calendar.appendChild(dayEl);
-            }
+for (let i = 1; i <= daysInMonth; i++) {
+    const dayEl = document.createElement('div');
+    const date = currentDate.clone().date(i);
+    const dateStr = date.format('YYYY-MM-DD');
+    const hasNote = notes[dateStr] ? true : false;
+    const taskCount = tasks[dateStr] ? tasks[dateStr].filter(task => !task.completed).length : 0;
+    const shiftPerson = getShiftPerson(date);
+    
+    dayEl.innerHTML = `
+        <div class="relative">
+            <span class="${date.day() === 7 ? 'text-red-500 font-bold' : 'text-blue'}">${i}</span>
+            ${hasNote ? `<span class="note-indicator"><i class="fas fa-pen text-green-200"></i></span>` : ''}
+            ${taskCount > 0 ? `<span class="task-count-badge">${taskCount}</span>` : ''}
+            ${shiftPerson ? `<div class="shift-name">${shiftPerson}</div>` : ''}
+        </div>
+    `;
+    
+    dayEl.className = 'calendar-day';
+    
+    if (isHoliday(date)) {
+        dayEl.classList.add('holiday');
+    }
+    
+    if (i === selectedDate.date() && currentDate.month() === selectedDate.month() && currentDate.year() === selectedDate.year()) {
+        dayEl.classList.add('selected-day');
+    }
+    
+    dayEl.addEventListener('click', () => {
+        selectedDate = currentDate.clone().date(i);
+        renderCalendar();
+        renderTasks();
+        renderNote();
+    });
+    calendar.appendChild(dayEl);
+}
         }
 
         function renderTasks() {
@@ -2474,57 +2508,59 @@
             renderAssigneeFilter();
         }
 
-        function renderShiftSettings() {
-            const shiftDay1 = document.getElementById('shiftDay1');
-            const shiftDay2 = document.getElementById('shiftDay2');
-            const shiftDay3 = document.getElementById('shiftDay3');
-            const shiftStartDate = document.getElementById('shiftStartDate');
-            
-            // پاک کردن گزینه‌های قبلی
-            shiftDay1.innerHTML = '';
-            shiftDay2.innerHTML = '';
-            shiftDay3.innerHTML = '';
-            
-            // اضافه کردن گزینه‌های جدید
-            teamMembers.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member;
-                option.textContent = member;
-                
-                shiftDay1.appendChild(option.cloneNode(true));
-                shiftDay2.appendChild(option.cloneNode(true));
-                shiftDay3.appendChild(option.cloneNode(true));
-            });
-            
-            // تنظیم مقادیر قبلی اگر وجود داشته باشد
-            if (shifts.pattern && shifts.pattern.length >= 3) {
-                shiftDay1.value = shifts.pattern[0] || '';
-                shiftDay2.value = shifts.pattern[1] || '';
-                shiftDay3.value = shifts.pattern[2] || '';
-            }
-            
-            shiftStartDate.value = shifts.startDate || new persianDate().format('YYYY-MM-DD');
-        }
+    function renderShiftSettings() {
+    const shiftDay1 = document.getElementById('shiftDay1');
+    const shiftDay2 = document.getElementById('shiftDay2');
+    const shiftDay3 = document.getElementById('shiftDay3');
+    
+    // پاک کردن گزینه‌های قبلی
+    shiftDay1.innerHTML = '';
+    shiftDay2.innerHTML = '';
+    shiftDay3.innerHTML = '';
+    
+    // اضافه کردن گزینه‌های جدید
+    teamMembers.forEach(member => {
+        const option = document.createElement('option');
+        option.value = member;
+        option.textContent = member;
+        
+        shiftDay1.appendChild(option.cloneNode(true));
+        shiftDay2.appendChild(option.cloneNode(true));
+shiftDay3.appendChild(option.cloneNode(true));
+    });
+    
+    // تنظیم مقادیر قبلی اگر وجود داشته باشد
+    if (shifts.pattern && shifts.pattern.length >= 3) {
+        shiftDay1.value = shifts.pattern[0] || '';
+        shiftDay2.value = shifts.pattern[1] || '';
+        shiftDay3.value = shifts.pattern[2] || '';
+    }
+}
 
-        function saveShifts() {
-            const shiftDay1 = document.getElementById('shiftDay1').value;
-            const shiftDay2 = document.getElementById('shiftDay2').value;
-            const shiftDay3 = document.getElementById('shiftDay3').value;
-            
-            if (!shiftDay1 || !shiftDay2 || !shiftDay3) {
-                showNotification('لطفاً تمام فیلدها را پر کنید', false);
-                return;
-            }
-            
-            shifts = {
-                pattern: [shiftDay1, shiftDay2, shiftDay3],
-                startDate: new persianDate().format('YYYY-MM-DD')
-            };
-            
-            saveTasks();
-            renderCalendar();
-            showNotification('شیفت‌ها با موفقیت ذخیره شدند');
-        }
+
+
+function saveShifts() {
+    const shiftDay1 = document.getElementById('shiftDay1').value;
+    const shiftDay2 = document.getElementById('shiftDay2').value;
+    const shiftDay3 = document.getElementById('shiftDay3').value;
+    
+    if (!shiftDay1 || !shiftDay2 || !shiftDay3) {
+        showNotification('لطفاً تمام فیلدها را پر کنید', false);
+        return;
+    }
+    
+    // تاریخ شروع ثابت - 1 تیر 1404
+    const fixedStartDate = '1404-04-01';
+    
+    shifts = {
+        pattern: [shiftDay1, shiftDay2, shiftDay3],
+        startDate: fixedStartDate
+    };
+    
+    saveTasks();
+    renderCalendar();
+    showNotification('شیفت‌ها با موفقیت ذخیره شدند');
+}
 
         function setupMultiselect() {
             const multiselect = document.querySelector('.multiselect');
@@ -3274,6 +3310,9 @@
         // نمایش صفحه ورود
         document.getElementById('passwordModal').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
+
+document.getElementById('goToToday').addEventListener('click', goToToday);
+
     </script>
 </body>
 </html>
