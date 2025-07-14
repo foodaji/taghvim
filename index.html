@@ -1582,11 +1582,17 @@ for (let i = 1; i <= daysInMonth; i++) {
             taskList.innerHTML = '';
             if (tasks[selectedDateStr] && Array.isArray(tasks[selectedDateStr])) {
                 // مرتب‌سازی کارها بر اساس اولویت (بالاترین اولویت اول)
-                const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
-                    const priorityA = a.priority || 0;
-                    const priorityB = b.priority || 0;
-                    return priorityB - priorityA;
-                });
+const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
+    // اگر یکی انجام‌شده و دیگری نه، کار انجام‌نشده بیاد بالا
+    if (a.completed && !b.completed) return 1;
+    if (!a.completed && b.completed) return -1;
+
+    // اگر هر دو وضعیت مشابه دارند، بر اساس اولویت مرتب کن (بیشتر بالاتر)
+    const priorityA = a.priority || 0;
+    const priorityB = b.priority || 0;
+    return priorityB - priorityA;
+});
+
                 
                 sortedTasks.forEach((task, index) => {
                     const originalIndex = tasks[selectedDateStr].indexOf(task);
