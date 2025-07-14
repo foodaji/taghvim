@@ -965,6 +965,9 @@
         <div class="modal-content">
             <h3 class="text-lg font-bold mb-2">انتقال کار به تاریخ جدید</h3>
             <div class="mb-4">
+<button id="moveToToday" class="btn btn-warning mb-2 w-full">
+    <i class="fas fa-calendar-day mr-1"></i> انتقال به امروز
+</button>
                 <button id="moveToNextDay" class="btn btn-primary mb-2 w-full">
                     <i class="fas fa-arrow-right mr-1"></i> انتقال به روز بعد
                 </button>
@@ -3318,6 +3321,26 @@ function saveShifts() {
         document.getElementById('mainContent').style.display = 'none';
 
 document.getElementById('goToToday').addEventListener('click', goToToday);
+
+// دکمه انتقال کار به امروز
+document.getElementById('moveToToday').addEventListener('click', () => {
+    if (moveTaskContext.date && moveTaskContext.index !== -1) {
+        const todayStr = new persianDate().format('YYYY-MM-DD');
+
+        if (!tasks[todayStr]) tasks[todayStr] = [];
+
+        const movedTask = tasks[moveTaskContext.date][moveTaskContext.index];
+        tasks[todayStr].push(movedTask);
+        tasks[moveTaskContext.date].splice(moveTaskContext.index, 1);
+
+        saveTasks();
+        renderTasks();
+        renderCalendar();
+        closeDatePicker();
+        showNotification('کار به امروز منتقل شد');
+    }
+});
+
 
     </script>
 </body>
