@@ -61,6 +61,15 @@
             padding: 1rem;
         }
         
+.group-header {
+    background-color: #f3f4f6;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    border-right: 3px solid var(--primary);
+}
         .bg-white { 
             background-color: #fff; 
         }
@@ -845,8 +854,23 @@
             </div>
 
             <!-- مدیریت کارها -->
+
             <div class="bg-white p-4 rounded-lg shadow">
                 <h2 id="selectedDate" class="text-lg font-bold mb-4"></h2>
+
+
+<div class="flex flex-row gap-2 mb-4 items-center justify-start">
+    <button id="sortByAssignee" class="btn btn-primary btn-sm whitespace-nowrap min-w-[150px]">
+        <i class="fas fa-users ml-1"></i>
+        <span>مرتب‌سازی بر اساس همکار</span>
+    </button>
+    <button id="sortByPriority" class="btn btn-primary btn-sm whitespace-nowrap min-w-[150px]">
+        <i class="fas fa-star ml-1"></i>
+        <span>مرتب‌سازی بر اساس اهمیت</span>
+    </button>
+</div>
+
+
                 <div class="mb-4">
                     <input id="taskInput" type="text" placeholder="کار جدید..." class="w-full p-2 border rounded">
                     <div class="mt-2">
@@ -889,6 +913,11 @@
                 </div>
                 <div id="taskList" class="mt-4"></div>
             </div>
+
+
+
+
+
 
             <!-- کارهای انجام‌نشده، لوازم مورد نیاز و جستجو -->
             <div>
@@ -949,7 +978,15 @@
     </div>
 
     <!-- آمار کارها -->
+
+
+
+
     <div class="task-stats">
+
+
+
+
         <div class="stat-item completed-stat">
             <span class="stat-value" id="completedCount">0</span>
             <span class="stat-label">انجام شده</span>
@@ -959,6 +996,9 @@
             <span class="stat-label">انجام نشده</span>
         </div>
     </div>
+
+
+
 
     <!-- Date Picker Modal -->
     <div id="datePicker" class="modal-overlay">
@@ -1577,97 +1617,160 @@ for (let i = 1; i <= daysInMonth; i++) {
 }
         }
 
-        function renderTasks() {
-            const taskList = document.getElementById('taskList');
-            const selectedDateStr = selectedDate.format('YYYY-MM-DD');
-            document.getElementById('selectedDate').textContent = selectedDate.format('DD MMMM YYYY');
+function renderTasks() {
+    const taskList = document.getElementById('taskList');
+    const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+    document.getElementById('selectedDate').textContent = selectedDate.format('DD MMMM YYYY');
 
-            taskList.innerHTML = '';
-            if (tasks[selectedDateStr] && Array.isArray(tasks[selectedDateStr])) {
-                // مرتب‌سازی کارها بر اساس اولویت (بالاترین اولویت اول)
-const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
-    // اگر یکی انجام‌شده و دیگری نه، کار انجام‌نشده بیاد بالا
-    if (a.completed && !b.completed) return 1;
-    if (!a.completed && b.completed) return -1;
-
-    // اگر هر دو وضعیت مشابه دارند، بر اساس اولویت مرتب کن (بیشتر بالاتر)
-    const priorityA = a.priority || 0;
-    const priorityB = b.priority || 0;
-    return priorityB - priorityA;
-});
-
+    taskList.innerHTML = '';
+    
+    if (tasks[selectedDateStr] && Array.isArray(tasks[selectedDateStr])) {
+        // مرتب‌سازی کارها
+        const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
+            // اولویت با کارهای انجام نشده
+            if (a.completed && !b.completed) return 1;
+            if (!a.completed && b.completed) return -1;
+            
+            // اگر مرتب‌سازی بر اساس همکار فعال است
+            if (currentSortMethod === 'assignee') {
+                const assigneeA = a.assignees && a.assignees.length > 0 ? 
+                    teamMembers.indexOf(a.assignees[0]) : -1;
+                const assigneeB = b.assignees && b.assignees.length > 0 ? 
+                    teamMembers.indexOf(b.assignees[0]) : -1;
                 
-                sortedTasks.forEach((task, index) => {
-                    const originalIndex = tasks[selectedDateStr].indexOf(task);
-                    const taskEl = document.createElement('div');
-                    taskEl.className = 'task-item';
-                    
-                    // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
-                    let bgClass = '';
-                    if (task.assignees && task.assignees.length === 1) {
-                        const userIndex = teamMembers.indexOf(task.assignees[0]);
-                        if (userIndex >= 0 && userIndex < 12) {
-                            bgClass = `user${userIndex + 1}-bg`;
-                        }
-                    }
-                    
-                    const descriptionHtml = task.description ? 
-                        `<div class="task-description">${task.description}</div>` : 
-                        '';
-                    
-                    const assigneesHtml = task.assignees && task.assignees.length > 0 ? 
-                        `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
-                        '';
-                    
-                    // ایجاد ستاره‌های اولویت
-                    const priorityStars = [];
-                    for (let i = 3; i >= 1; i--) {
-                        priorityStars.push(`<i class="fas fa-star priority-star ${task.priority >= i ? 'active' : ''}" data-value="${i}" onclick="updateTaskPriority('${selectedDateStr}', ${originalIndex}, ${i})"></i>`);
-                    }
-                    
-                    taskEl.innerHTML = `
-                        <div class="w-full ${bgClass} p-2 rounded">
-                            <div class="flex items-center">
-                                <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.task-actions').classList.toggle('show-actions')">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </div>
-                                <div class="task-actions">
-                                    <button onclick="toggleTask(${originalIndex})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" title="${task.completed ? 'لغو انجام' : 'انجام'}">
-                                        <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
-                                    </button>
-                                    ${!task.completed ? `
-                                    <button onclick="openMoveTaskDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </button>` : ''}
-                                    <button onclick="openDescriptionDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
-                                        <i class="fas fa-comment"></i>
-                                    </button>
-                                    <button onclick="openAssigneeDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
-                                        <i class="fas fa-users"></i>
-                                    </button>
-                                    <button onclick="openEditTaskDialog('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteTask('${selectedDateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-danger" title="حذف">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                                <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
-                                <div class="priority-stars">
-                                    ${priorityStars.join('')}
-                                </div>
-                            </div>
-                            ${descriptionHtml}
-                            ${assigneesHtml}
-                        </div>
-                    `;
-                    taskList.appendChild(taskEl);
-                });
+                if (assigneeA < assigneeB) return -1;
+                if (assigneeA > assigneeB) return 1;
             }
-            renderIncompleteTasks();
-            renderAssigneeTasks();
-            updateTaskStats();
+            
+            // مرتب‌سازی بر اساس اولویت (بالاترین اولویت اول)
+            return (b.priority || 0) - (a.priority || 0);
+        });
+
+        // نمایش کارها
+        if (currentSortMethod === 'assignee') {
+            // نمایش گروه‌بندی شده بر اساس همکار
+            const groupedTasks = {};
+            sortedTasks.forEach(task => {
+                const assignee = task.assignees && task.assignees.length > 0 ? 
+                    task.assignees[0] : 'بدون اختصاص';
+                
+                if (!groupedTasks[assignee]) {
+                    groupedTasks[assignee] = [];
+                }
+                groupedTasks[assignee].push(task);
+            });
+
+            Object.keys(groupedTasks).forEach(assignee => {
+                // هدر گروه
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header flex items-center';
+                
+                // رنگ بر اساس همکار
+                let bgClass = 'bg-gray-100';
+                if (assignee !== 'بدون اختصاص') {
+                    const userIndex = teamMembers.indexOf(assignee);
+                    if (userIndex >= 0 && userIndex < 12) {
+                        bgClass = `user${userIndex + 1}-bg`;
+                    }
+                }
+                
+                groupHeader.innerHTML = `
+                    <span class="${bgClass} px-3 py-1 rounded-full text-white">${assignee}</span>
+                    <span class="mr-2">${groupedTasks[assignee].length} کار</span>
+                `;
+                taskList.appendChild(groupHeader);
+
+                // نمایش کارهای هر گروه
+                groupedTasks[assignee].forEach((task, index) => {
+                    const originalIndex = tasks[selectedDateStr].indexOf(task);
+                    renderTaskItem(taskList, task, originalIndex, selectedDateStr);
+                });
+            });
+        } else {
+            // نمایش ساده بر اساس اولویت
+            sortedTasks.forEach((task, index) => {
+                const originalIndex = tasks[selectedDateStr].indexOf(task);
+                renderTaskItem(taskList, task, originalIndex, selectedDateStr);
+            });
         }
+    } else {
+        taskList.innerHTML = '<div class="text-center text-gray-500 py-4">هیچ کاری برای این روز ثبت نشده است</div>';
+    }
+    
+    renderIncompleteTasks();
+    renderAssigneeTasks();
+    updateTaskStats();
+}
+
+// تابع جداگانه برای رندر هر آیتم کار
+function renderTaskItem(container, task, originalIndex, dateStr) {
+    const taskEl = document.createElement('div');
+    taskEl.className = 'task-item';
+    
+    // تعیین کلاس رنگ بر اساس افراد اختصاص داده شده
+    let bgClass = '';
+    if (task.assignees && task.assignees.length === 1) {
+        const userIndex = teamMembers.indexOf(task.assignees[0]);
+        if (userIndex >= 0 && userIndex < 12) {
+            bgClass = `user${userIndex + 1}-bg`;
+        }
+    }
+    
+    const descriptionHtml = task.description ? 
+        `<div class="task-description">${task.description}</div>` : 
+        '';
+    
+    const assigneesHtml = task.assignees && task.assignees.length > 0 ? 
+        `<div class="text-xs mt-1">اختصاص داده شده به: ${task.assignees.join('، ')}</div>` : 
+        '';
+    
+    // ایجاد ستاره‌های اولویت
+    const priorityStars = [];
+    for (let i = 3; i >= 1; i--) {
+        priorityStars.push(`<i class="fas fa-star priority-star ${task.priority >= i ? 'active' : ''}" 
+            data-value="${i}" onclick="updateTaskPriority('${dateStr}', ${originalIndex}, ${i})"></i>`);
+    }
+    
+    taskEl.innerHTML = `
+        <div class="w-full ${bgClass} p-2 rounded">
+            <div class="flex items-center">
+                <div class="action-toggle" onclick="event.stopPropagation(); 
+                    this.parentElement.parentElement.querySelector('.task-actions').classList.toggle('show-actions')">
+                    <i class="fas fa-ellipsis-v"></i>
+                </div>
+                <div class="task-actions">
+                    <button onclick="toggleTask(${originalIndex})" class="btn btn-icon btn-sm ${task.completed ? 'btn-success' : 'btn-secondary'}" 
+                        title="${task.completed ? 'لغو انجام' : 'انجام'}">
+                        <i class="fas ${task.completed ? 'fa-check' : 'fa-circle'}"></i>
+                    </button>
+                    ${!task.completed ? `
+                    <button onclick="openMoveTaskDialog('${dateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-warning" title="انتقال">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>` : ''}
+                    <button onclick="openDescriptionDialog('${dateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-secondary" title="توضیحات">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                    <button onclick="openAssigneeDialog('${dateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-primary" title="تغییر همکاران">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <button onclick="openEditTaskDialog('${dateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteTask('${dateStr}', ${originalIndex})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <span class="task-text ${task.completed ? 'line-through' : ''}">${task.text}</span>
+                <div class="priority-stars">
+                    ${priorityStars.join('')}
+                </div>
+            </div>
+            ${descriptionHtml}
+            ${assigneesHtml}
+        </div>
+    `;
+    container.appendChild(taskEl);
+}
 
         function updateTaskPriority(date, index, priority) {
             if (tasks[date] && tasks[date][index]) {
@@ -1826,30 +1929,57 @@ const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
             });
         }
 
-        function renderAssigneeTasks() {
-            const assigneeTasks = document.getElementById('assigneeTasks');
-            const selectedAssignee = document.getElementById('assigneeFilter').value;
-            assigneeTasks.innerHTML = '';
-            
-            // جمع‌آوری همه کارهای اختصاص داده شده و انجام نشده
-            let allAssigneeTasks = [];
-            
-            Object.keys(tasks).forEach(date => {
-                if (tasks[date] && Array.isArray(tasks[date])) {
-                    tasks[date].forEach((task, index) => {
-                        if (!task.completed && task.assignees && task.assignees.length > 0) {
-                            if (!selectedAssignee || task.assignees.includes(selectedAssignee)) {
-                                allAssigneeTasks.push({
-                                    date,
-                                    index,
-                                    task,
-                                    persianDate: new persianDate(date)
-                                });
-                            }
+       function renderAssigneeTasks() {
+    const assigneeTasks = document.getElementById('assigneeTasks');
+    const selectedAssignee = document.getElementById('assigneeFilter').value;
+    assigneeTasks.innerHTML = '';
+    
+    // جمع‌آوری همه کارهای اختصاص داده شده و انجام نشده
+    let allAssigneeTasks = [];
+    
+    Object.keys(tasks).forEach(date => {
+        if (tasks[date] && Array.isArray(tasks[date])) {
+            tasks[date].forEach((task, index) => {
+                if (!task.completed) {
+                    // اگر گزینه "بدون اختصاص" انتخاب شده باشد
+                    if (selectedAssignee === "unassigned") {
+                        if (!task.assignees || task.assignees.length === 0) {
+                            allAssigneeTasks.push({
+                                date,
+                                index,
+                                task,
+                                persianDate: new persianDate(date)
+                            });
                         }
-                    });
+                    } 
+                    // اگر گزینه "همه همکاران" انتخاب شده باشد
+                    else if (!selectedAssignee) {
+                        if (task.assignees && task.assignees.length > 0) {
+                            allAssigneeTasks.push({
+                                date,
+                                index,
+                                task,
+                                persianDate: new persianDate(date)
+                            });
+                        }
+                    } 
+                    // اگر همکار خاصی انتخاب شده باشد
+                    else if (task.assignees && task.assignees.includes(selectedAssignee)) {
+                        allAssigneeTasks.push({
+                            date,
+                            index,
+                            task,
+                            persianDate: new persianDate(date)
+                        });
+                    }
                 }
             });
+        }
+    });
+    
+    // بقیه کد بدون تغییر...
+    // مرتب‌سازی و نمایش کارها همانطور که بود
+
             
             // مرتب‌سازی بر اساس تاریخ (قدیمی‌ترین اول) و اولویت (بالاترین اولویت اول)
             allAssigneeTasks.sort((a, b) => {
@@ -1932,6 +2062,7 @@ const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
         function renderAssigneeFilter() {
             const assigneeFilter = document.getElementById('assigneeFilter');
             assigneeFilter.innerHTML = '<option value="">همه همکاران</option>';
+            assigneeFilter.innerHTML += '<option value="unassigned">بدون اختصاص</option>';
             
             teamMembers.forEach(member => {
                 const option = document.createElement('option');
@@ -3341,6 +3472,18 @@ document.getElementById('moveToToday').addEventListener('click', () => {
     }
 });
 
+// متغیر برای ذخیره وضعیت مرتب‌سازی
+let currentSortMethod = 'assignee'; // یا 'priority'
+
+document.getElementById('sortByAssignee').addEventListener('click', () => {
+    currentSortMethod = 'assignee';
+    renderTasks();
+});
+
+document.getElementById('sortByPriority').addEventListener('click', () => {
+    currentSortMethod = 'priority';
+    renderTasks();
+});
 
     </script>
 </body>
