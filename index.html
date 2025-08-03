@@ -60,6 +60,85 @@
             margin-right: auto; 
             padding: 1rem;
         }
+
+.mission-item {
+    position: relative;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.mission-item:hover {
+    background-color: #f9fafb;
+}
+
+.mission-actions {
+    display: none;
+    margin-right: auto;
+    gap: 0.25rem;
+}
+
+.mission-item:hover .mission-actions {
+    display: none;
+}
+
+.mission-actions.show-actions {
+      display: flex;
+}
+
+.mission-actions-toggle {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    margin-left: 0.5rem;
+}
+
+
+.mission-actions button {
+    margin: 0.25rem 0;
+    text-align: right;
+    justify-content: flex-end;
+}
+
+.mission-actions-toggle:hover {
+    background-color: #f3f4f6;
+}
+.completed-mission {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.mission-actions button {
+    margin: 0.25rem 0;
+    text-align: right;
+    justify-content: flex-end;
+}
+
+.toggle-equipment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: var(--light);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+
+.toggle-equipment i {
+    transition: transform 0.2s;
+}
+
+.toggle-equipment.active i {
+    transform: rotate(180deg);
+}
         
 .group-header {
     background-color: #f3f4f6;
@@ -920,7 +999,32 @@
 
 
             <!-- کارهای انجام‌نشده، لوازم مورد نیاز و جستجو -->
+
+
+
+
+
+
             <div>
+
+    <!-- جستجو -->
+                <div id="searchSection" class="bg-white p-4 rounded-lg shadow hidden">
+                    <h2 class="text-lg font-bold mb-4">جستجو</h2>
+                    <div class="search-options">
+                        <div class="search-option active" data-type="tasks">کارها</div>
+                        <div class="search-option" data-type="notes">یادداشتها</div>
+                    </div>
+                    <div class="mb-4">
+                        <input id="searchInput" type="text" placeholder="جستجوی کار یا توضیحات..." class="w-full p-2 border rounded mb-2">
+                        <div class="flex gap-2">
+                            <input id="searchStartDate" type="text" placeholder="از تاریخ (YYYY-MM-DD)" class="p-2 border rounded w-1/2">
+                            <input id="searchEndDate" type="text" placeholder="تا تاریخ (YYYY-MM-DD)" class="p-2 border rounded w-1/2">
+                        </div>
+                    </div>
+                    <div id="searchResults" class="mt-4"></div>
+                </div>
+
+    
                 <!-- کارهای انجام‌نشده -->
                 <div class="bg-white p-4 rounded-lg shadow mb-4">
                     <div class="toggle-incomplete-tasks" id="toggleIncompleteTasks">
@@ -945,37 +1049,77 @@
                     </div>
                 </div>
                 
-                <!-- لوازم مورد نیاز -->
-                <div class="bg-white p-4 rounded-lg shadow mb-4">
-                    <h2 class="text-lg font-bold mb-4">لوازم مورد نیاز</h2>
-                    <div class="mb-4">
-                        <input id="equipmentInput" type="text" placeholder="نام لوازم..." class="w-full p-2 border rounded mb-2">
-                        <button id="addEquipment" class="btn btn-success w-full">
-                            <i class="fas fa-plus mr-1"></i> افزودن
-                        </button>
-                    </div>
-                    <div id="equipmentList" class="mt-4"></div>
+             <!-- لوازم مورد نیاز -->
+<div class="bg-white p-4 rounded-lg shadow mb-4">
+    <div class="toggle-equipment" id="toggleEquipment">
+        <h2 class="text-lg font-bold">لوازم مورد نیاز</h2>
+        <i class="fas fa-chevron-down"></i>
+    </div>
+    <div id="equipmentContent" class="mt-2 hidden">
+        <div class="mb-4">
+            <input id="equipmentInput" type="text" placeholder="نام لوازم..." class="w-full p-2 border rounded mb-2">
+            <button id="addEquipment" class="btn btn-success w-full">
+                <i class="fas fa-plus mr-1"></i> افزودن
+            </button>
+        </div>
+        <div id="equipmentList" class="mt-4"></div>
+    </div>
+</div>
+
+
+
+
+<!-- ماموریت‌ها -->
+<div class="bg-white p-4 rounded-lg shadow mb-4">
+    <div class="toggle-missions" id="toggleMissions">
+        <h2 class="text-lg font-bold">ماموریت‌ها</h2>
+        <i class="fas fa-chevron-down"></i>
+    </div>
+    <div id="missionsContent" class="mt-2 hidden">
+        <!-- فرم ثبت ماموریت جدید -->
+        <div class="mb-4 p-4 border rounded">
+            <h3 class="font-bold mb-2">ثبت ماموریت جدید</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">مقصد</label>
+                    <input id="missionDestination" type="text" class="w-full p-2 border rounded">
                 </div>
-                
-                <!-- جستجو -->
-                <div id="searchSection" class="bg-white p-4 rounded-lg shadow hidden">
-                    <h2 class="text-lg font-bold mb-4">جستجو</h2>
-                    <div class="search-options">
-                        <div class="search-option active" data-type="tasks">کارها</div>
-                        <div class="search-option" data-type="notes">یادداشتها</div>
-                    </div>
-                    <div class="mb-4">
-                        <input id="searchInput" type="text" placeholder="جستجوی کار یا توضیحات..." class="w-full p-2 border rounded mb-2">
-                        <div class="flex gap-2">
-                            <input id="searchStartDate" type="text" placeholder="از تاریخ (YYYY-MM-DD)" class="p-2 border rounded w-1/2">
-                            <input id="searchEndDate" type="text" placeholder="تا تاریخ (YYYY-MM-DD)" class="p-2 border rounded w-1/2">
-                        </div>
-                    </div>
-                    <div id="searchResults" class="mt-4"></div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">علت ماموریت</label>
+                    <input id="missionReason" type="text" class="w-full p-2 border rounded">
                 </div>
             </div>
+            <button id="addMission" class="btn btn-success mt-4 w-full">
+                <i class="fas fa-plus mr-1"></i> ثبت ماموریت
+            </button>
+        </div>
+
+        <!-- جستجوی ماموریت‌ها -->
+        <div class="mb-4">
+            <input id="searchMissions" type="text" placeholder="جستجو در ماموریت‌ها..." 
+                   class="w-full p-2 border rounded">
+        </div>
+
+        <!-- نمایش ماموریت‌های انجام نشده -->
+        <div id="pendingMissionsList"></div>
+
+        <!-- نمایش ماموریت‌های انجام شده -->
+        <div class="mt-4">
+            <label class="inline-flex items-center">
+                <input type="checkbox" id="showCompletedMissions" class="mr-2">
+                <span>نمایش ماموریت‌های انجام شده</span>
+            </label>
+            <div id="completedMissionsList" class="hidden mt-2"></div>
         </div>
     </div>
+</div>
+                
+ 
+
+
+            </div>
+        </div>  
+</div>         
 
     <!-- آمار کارها -->
 
@@ -1401,6 +1545,10 @@ function goToToday() {
                         startDate: new persianDate().format('YYYY-MM-DD')
                     };
                     equipmentList = data.record.equipmentList || [];
+                    missions = data.record.missions || [];
+                   renderMissions();   // ✅ نمایش مأموریت‌ها در UI
+
+
                     
                     // بارگذاری رمز عبور از دیتابیس (اگر وجود دارد)
                     if (data.record.appPassword) {
@@ -1454,6 +1602,7 @@ function goToToday() {
                     startDate: new persianDate().format('YYYY-MM-DD')
                 };
                 equipmentList = JSON.parse(localStorage.getItem('equipment')) || [];
+                missions = JSON.parse(localStorage.getItem('missions')) || [];
                 backupSettings = JSON.parse(localStorage.getItem('backupSettings')) || {
                     backupPath: '',
                     lastBackupDate: null
@@ -1490,6 +1639,7 @@ function goToToday() {
                     shifts,
                     equipmentList,
                     appPassword,
+                    missions,
                     backupSettings
                 };
 
@@ -1527,6 +1677,7 @@ function goToToday() {
             localStorage.setItem('equipment', JSON.stringify(equipmentList));
             localStorage.setItem('appPassword', appPassword);
             localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
+            localStorage.setItem('missions', JSON.stringify(missions));
             updateTaskStats();
             
             // ذخیره در فضای ابری
@@ -3484,6 +3635,297 @@ document.getElementById('sortByPriority').addEventListener('click', () => {
     currentSortMethod = 'priority';
     renderTasks();
 });
+
+
+function toggleEquipment() {
+    const equipmentContent = document.getElementById('equipmentContent');
+    const toggleBtn = document.getElementById('toggleEquipment');
+    
+    equipmentContent.classList.toggle('hidden');
+    toggleBtn.classList.toggle('active');
+}
+
+// اضافه کردن رویداد کلیک
+document.getElementById('toggleEquipment').addEventListener('click', toggleEquipment);
+
+
+
+// متغیرهای مربوط به ماموریت‌ها
+let missions = [];
+let currentMissionsFilter = '';
+
+// تابع نمایش/مخفی کردن بخش ماموریت‌ها
+function toggleMissions() {
+    const missionsContent = document.getElementById('missionsContent');
+    const toggleBtn = document.getElementById('toggleMissions');
+    
+    missionsContent.classList.toggle('hidden');
+    toggleBtn.classList.toggle('active');
+}
+
+// تابع ثبت ماموریت جدید
+function addMission() {
+    const destination = document.getElementById('missionDestination').value.trim();
+    const reason = document.getElementById('missionReason').value.trim();
+    
+    if (!destination || !reason) {
+        showNotification('لطفاً مقصد و علت ماموریت را وارد کنید', false);
+        return;
+    }
+    
+    const newMission = {
+        id: Date.now(),
+        destination,
+        reason,
+        date: new persianDate().format('YYYY-MM-DD HH:mm'),
+        completed: false,
+        assignee: null,
+        result: null
+    };
+    
+    missions.push(newMission);
+    saveMissions();
+    renderMissions();
+saveTasks(); 
+    
+    document.getElementById('missionDestination').value = '';
+    document.getElementById('missionReason').value = '';
+    
+    showNotification('ماموریت با موفقیت ثبت شد');
+}
+
+// تابع ذخیره ماموریت‌ها
+async function saveMissions() {
+    localStorage.setItem('missions', JSON.stringify(missions));
+    
+    try {
+        showLoading();
+        const dataToSave = { 
+            tasks, 
+            notes, 
+            holidays, 
+            teamMembers, 
+            shifts,
+            equipmentList,
+            appPassword,
+            missions, // اضافه کردن ماموریت‌ها به داده‌های ذخیره شده
+            backupSettings
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'PUT',
+            headers: {
+                'X-Master-Key': API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataToSave)
+        });
+
+        if (!response.ok) throw new Error('خطا در ذخیره ماموریت‌ها');
+        
+        showNotification('تغییرات ماموریت‌ها با موفقیت ذخیره شد');
+    } catch (error) {
+        console.error('Error saving missions:', error);
+        showNotification('خطا در ذخیره تغییرات ماموریت‌ها', false, error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// تابع بارگذاری ماموریت‌ها
+function loadMissions() {
+    const savedMissions = localStorage.getItem('missions');
+    if (savedMissions) {
+        missions = JSON.parse(savedMissions);
+    }
+}
+
+// تابع رندر ماموریت‌ها
+function renderMissions() {
+    const pendingList = document.getElementById('pendingMissionsList');
+    const completedList = document.getElementById('completedMissionsList');
+    
+    pendingList.innerHTML = '';
+    completedList.innerHTML = '';
+    
+    // فیلتر کردن بر اساس جستجو
+    const filteredMissions = missions.filter(mission => {
+        const matchesSearch = currentMissionsFilter === '' || 
+            mission.destination.includes(currentMissionsFilter) || 
+            mission.reason.includes(currentMissionsFilter);
+        
+        return matchesSearch;
+    });
+    
+    // تقسیم به انجام شده و انجام نشده
+    const pendingMissions = filteredMissions.filter(m => !m.completed);
+    const completedMissions = filteredMissions.filter(m => m.completed);
+    
+    // نمایش ماموریت‌های انجام نشده
+    if (pendingMissions.length === 0) {
+        pendingList.innerHTML = '<div class="text-center text-gray-500 py-4">ماموریت انجام نشده‌ای وجود ندارد</div>';
+    } else {
+        pendingMissions.forEach(mission => {
+            pendingList.appendChild(createMissionElement(mission));
+        });
+    }
+    
+    // نمایش ماموریت‌های انجام شده
+    if (completedMissions.length === 0) {
+        completedList.innerHTML = '<div class="text-center text-gray-500 py-4">ماموریت انجام شده‌ای وجود ندارد</div>';
+    } else {
+        completedMissions.forEach(mission => {
+            completedList.appendChild(createMissionElement(mission));
+        });
+    }
+}
+
+// تابع ایجاد المان ماموریت
+function createMissionElement(mission) {
+    const missionEl = document.createElement('div');
+    missionEl.className = `mission-item ${mission.completed ? 'completed-mission' : ''}`;
+    
+    const missionContent = document.createElement('div');
+    missionContent.className = 'flex items-center justify-between';
+    
+    missionContent.innerHTML = `
+        <div class="flex items-center">
+            <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.mission-actions').classList.toggle('show-actions')">
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+            <div class="mission-actions">
+                ${!mission.completed ? `
+                <button onclick="completeMission(${mission.id})" class="btn btn-icon btn-sm btn-success" title="انجام شد">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button onclick="editMission(${mission.id})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                    <i class="fas fa-edit"></i>
+                </button>
+                ` : ''}
+                <button onclick="deleteMission(${mission.id})" class="btn btn-icon btn-sm btn-danger" title="حذف">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="mr-2">
+                <div><span class="font-bold">مقصد:</span> ${mission.destination}</div>
+                <div><span class="font-bold">علت:</span> ${mission.reason}</div>
+                ${mission.completed ? `
+                    <div><span class="font-bold">اعزامی:</span> ${mission.assignee}</div>
+                    <div><span class="font-bold">نتیجه:</span> ${mission.result}</div>
+                ` : ''}
+            </div>
+        </div>
+        <div class="text-sm text-gray-500">${mission.date}</div>
+    `;
+    
+    missionEl.appendChild(missionContent);
+    return missionEl;
+}
+// تابع تکمیل ماموریت
+function completeMission(missionId) {
+    event.stopPropagation();
+    const mission = missions.find(m => m.id === missionId);
+    if (!mission) return;
+    
+    const assignee = prompt('نام فرد اعزامی را وارد کنید:');
+    if (!assignee) return;
+    
+    const result = prompt('نتیجه ماموریت را وارد کنید:');
+    if (!result) return;
+    
+    mission.completed = true;
+    mission.assignee = assignee;
+    mission.result = result;
+    
+    saveMissions();
+    renderMissions();
+    
+    showNotification('وضعیت ماموریت به "انجام شده" تغییر کرد');
+}
+
+function editMission(missionId) {
+    event.stopPropagation();
+    const mission = missions.find(m => m.id === missionId);
+    if (!mission) return;
+    
+    const newDestination = prompt('مقصد جدید را وارد کنید:', mission.destination);
+    if (!newDestination) return;
+    
+    const newReason = prompt('علت جدید را وارد کنید:', mission.reason);
+    if (!newReason) return;
+    
+    mission.destination = newDestination;
+    mission.reason = newReason;
+    
+    saveMissions();
+    renderMissions();
+    
+    showNotification('ماموریت با موفقیت ویرایش شد');
+}
+
+function deleteMission(missionId) {
+    event.stopPropagation();
+    if (confirm('آیا از حذف این ماموریت مطمئن هستید؟')) {
+        missions = missions.filter(m => m.id !== missionId);
+        saveMissions();
+        renderMissions();
+        
+        showNotification('ماموریت با موفقیت حذف شد');
+    }
+}
+
+// تابع جستجوی ماموریت‌ها
+function searchMissions() {
+    currentMissionsFilter = document.getElementById('searchMissions').value;
+    renderMissions();
+}
+
+// تابع نمایش/مخفی کردن ماموریت‌های انجام شده
+function toggleCompletedMissions() {
+    const completedList = document.getElementById('completedMissionsList');
+    completedList.classList.toggle('hidden');
+}
+
+function toggleMissionActions(missionId) {
+    // بستن همه پنل‌های دیگر
+    document.querySelectorAll('.mission-actions').forEach(panel => {
+        if (panel.id !== `mission-actions-${missionId}`) {
+            panel.classList.remove('show-actions');
+        }
+    });
+    
+    // toggle پنل جاری
+    const actions = document.getElementById(`mission-actions-${missionId}`);
+    actions.classList.toggle('show-actions');
+}
+
+// بستن پنل‌های عملیاتی با کلیک در هر جای صفحه
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.mission-actions-toggle') && !e.target.closest('.mission-actions')) {
+        document.querySelectorAll('.mission-actions').forEach(actionPanel => {
+            actionPanel.classList.remove('show-actions');
+        });
+    }
+});
+
+// رویدادها
+document.getElementById('toggleMissions').addEventListener('click', toggleMissions);
+document.getElementById('addMission').addEventListener('click', addMission);
+document.getElementById('searchMissions').addEventListener('input', searchMissions);
+document.getElementById('showCompletedMissions').addEventListener('change', toggleCompletedMissions);
+
+// بستن پنل عملیاتی وقتی کاربر در هر جای دیگر صفحه کلیک کند
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.action-toggle') && !e.target.closest('.mission-actions')) {
+        document.querySelectorAll('.mission-actions').forEach(panel => {
+            panel.classList.remove('show-actions');
+        });
+    }
+});
+
+// بارگذاری اولیه
+loadMissions();
+renderMissions();
 
     </script>
 </body>
