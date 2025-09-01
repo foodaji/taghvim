@@ -915,7 +915,39 @@
             </div>
         </div>
         
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+<!-- Rating UI Section (inserted) -->
+<div id="ratingSection" class="section hidden">
+  <div class="flex justify-between items-center mb-2">
+    <h2 class="text-lg font-bold">امتیازدهی به همکاران</h2>
+    <div class="flex gap-1 items-center">
+      <button id="closeRatingSection" class="btn btn-danger btn-sm" title="بستن">
+        <i class="fas fa-times"></i>
+      </button>
+      <button id="prevRatingMonth" class="btn btn-primary btn-sm" title="ماه قبل"><i class="fas fa-chevron-right"></i></button>
+      <button id="nextRatingMonth" class="btn btn-primary btn-sm" title="ماه بعد"><i class="fas fa-chevron-left"></i></button>
+    </div>
+  </div>
+
+  <div class="mb-2">
+    <label for="ratingDate">انتخاب تاریخ (برای ذخیره: میلادی)</label>
+    <input type="date" id="ratingDate" class="border p-1 rounded" />
+    <div id="selectedDateLabel" class="mt-1 text-sm text-gray-600"></div>
+  </div>
+
+  <div id="ratingList" class="mb-2"></div>
+
+  <div class="flex gap-2 mb-2">
+    <button id="saveAllRatings" class="btn btn-success"><i class="fas fa-save mr-1"></i> ثبت یک‌جای امتیازها</button>
+    <button id="showMonthlyAverages" class="btn btn-secondary"><i class="fas fa-chart-bar mr-1"></i> نمایش آمار ماهانه</button>
+  </div>
+
+  <canvas id="ratingChart" class="hidden" style="max-width:100%;height:260px;"></canvas>
+  <div id="ratingMonthYear" class="mt-2 text-sm text-gray-600"></div>
+  <div id="ratingsStats" class="mt-2"></div>
+</div>
+<!-- End Rating UI Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 <!-- تقویم -->
 <div class="bg-white p-4 rounded-lg shadow">
     <div class="flex justify-between items-center mb-4">
@@ -3956,137 +3988,300 @@ renderMissions();
 
 <!-- Rating feature: robust wiring -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  try {
-    let ratings = JSON.parse(localStorage.getItem('ratings')) || [];
-    let ratingDate = new persianDate();
+// بازنویسی کامل بخش امتیازدهی — ذخیره در JSONBin و نمایش آمار ماهانه
+(function(){
+  // متغیرهای داخلی
+  let ratingPD = new persianDate(); // برای ناوبری ماهیانه (شمسی)
+  let ratingChartInstance = null;
 
-    function renderRatingList() {
-      const list = document.getElementById('ratingList');
-      if(!list) return;
-      list.innerHTML = '';
-      if (!Array.isArray(window.teamMembers)) return;
-      window.teamMembers.forEach((member, idx) => {
-        let active = true;
-        let memberName = member;
-        if (typeof member === 'object') {
-          memberName = member.name || memberName;
-          if (member.hasOwnProperty('activeForRating')) active = member.activeForRating;
-        }
-        if (active === false) return;
-        const container = document.createElement('div');
-        container.className = 'flex items-center justify-between border p-2 mb-2 rounded';
-        container.innerHTML = `<span style="flex:1">${memberName}</span>
-          <input type="number" min="-50" max="50" class="border p-1 w-20 ml-2" id="score_${idx}" placeholder="امتیاز">
-          <button class="btn btn-primary" id="submit_${idx}">ثبت</button>`;
-        list.appendChild(container);
-        const submitBtn = container.querySelector('#submit_' + idx);
-        if (submitBtn) {
-          submitBtn.addEventListener('click', function(){ submitRating(idx); });
-        }
-      });
-      const ymEl = document.getElementById('ratingMonthYear');
-      if (ymEl) ymEl.textContent = ratingDate.format('MMMM YYYY');
+  // دریافت رکورد کامل از JSONBin
+  async function getBinRecord() {
+    try {
+      const res = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY } });
+      if (!res.ok) throw new Error('خطا در دریافت داده از سرور');
+      const json = await res.json();
+      return json.record || {};
+    } catch (e) {
+      console.error('getBinRecord error', e);
+      showNotification('خطا در دریافت داده‌ها از JSONBin', false, e.message);
+      return {};
     }
+  }
 
-    function submitRating(memberIndex) {
-      const memberObj = window.teamMembers[memberIndex];
-      let memberName = (typeof memberObj === 'object') ? (memberObj.name || memberObj) : memberObj;
-      const scoreInput = document.getElementById('score_' + memberIndex);
-      if(!scoreInput) { alert('فیلد امتیاز پیدا نشد'); return; }
-      let score = parseInt(scoreInput.value, 10);
-      if (isNaN(score) || score < -50 || score > 50) {
-        alert('امتیاز باید بین -50 تا +50 باشد');
-        return;
-      }
-      const dateStr = ratingDate.format('YYYY-MM-DD');
-      const existing = ratings.find(r => r.member === memberName && r.date === dateStr);
-      if (existing) {
-        if (!confirm('برای این تاریخ امتیاز ثبت شده، آیا می‌خواهید جایگزین شود؟')) return;
-        existing.score = score;
-      } else {
-        ratings.push({ member: memberName, date: dateStr, score });
-      }
-      localStorage.setItem('ratings', JSON.stringify(ratings));
-      alert('امتیاز ثبت شد');
+  // ذخیره رکورد کامل در JSONBin (PUT)
+  async function putBinRecord(record) {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'X-Master-Key': API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+      if (!res.ok) throw new Error('خطا در ذخیره‌سازی در سرور');
+      const j = await res.json();
+      return j;
+    } catch (e) {
+      console.error('putBinRecord error', e);
+      showNotification('خطا در ذخیره‌سازی در JSONBin', false, e.message);
+      throw e;
     }
+  }
 
-    function showMonthlyAverages() {
-      const month = ratingDate.month();
-      const year = ratingDate.year();
-      const filtered = ratings.filter(r => {
-        const d = new persianDate(r.date);
-        return d.month() === month && d.year() === year;
-      });
-      const averagesMap = {};
-      filtered.forEach(r => {
-        if (!averagesMap[r.member]) averagesMap[r.member] = [];
-        averagesMap[r.member].push(r.score);
-      });
-      const labels = [];
-      const data = [];
-      if (!Array.isArray(window.teamMembers)) return;
-      window.teamMembers.forEach(member => {
-        let active = true;
-        let memberName = member;
-        if (typeof member === 'object') {
-          memberName = member.name || memberName;
-          if (member.hasOwnProperty('activeForRating')) active = member.activeForRating;
+  // رندر فرم امتیازدهی (فیلدهای عددی برای هر همکار)
+  async function renderRatingList() {
+    const record = await getBinRecord();
+    const members = record.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
+    const ratings = record.ratings || [];
+    const list = document.getElementById('ratingList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // تاریخ انتخاب‌شده از input (میلادی)
+    const dateInput = document.getElementById('ratingDate');
+    const selectedDateISO = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0,10);
+
+    members.forEach((member, idx) => {
+      const memberName = (typeof member === 'object') ? (member.name || member) : member;
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between border p-2 mb-2 rounded';
+      const existing = ratings.find(r=> r.member === memberName && r.date === selectedDateISO);
+      const val = existing ? existing.score : 0;
+      row.innerHTML = `
+        <span style="flex:1">${memberName}</span>
+        <input type="number" id="rating_score_${idx}" data-member-index="${idx}" data-member-name="${memberName}" class="border p-1 w-20 ml-2" min="-50" max="50" step="1" value="${val}">
+        <button class="btn btn-primary btn-sm" type="button" data-member-index="${idx}" style="margin-left:0.5rem" id="rating_submit_${idx}">ثبت</button>
+      `;
+      list.appendChild(row);
+
+      // دکمه ثبت تک‌تک
+      const submitBtn = row.querySelector(`#rating_submit_${idx}`);
+      submitBtn.addEventListener('click', async () => {
+        const input = row.querySelector(`#rating_score_${idx}`);
+        let score = parseInt(input.value,10);
+        if (isNaN(score) || score < -50 || score > 50) {
+          alert('امتیاز باید عددی بین -50 تا +50 باشد');
+          return;
         }
-        if (active === false) return;
-        labels.push(memberName);
-        const scores = averagesMap[memberName] || [];
-        if (scores.length > 0) {
-          data.push(Math.round((scores.reduce((a,b)=>a+b,0) / scores.length) * 100) / 100);
+        const rec = await getBinRecord();
+        rec.ratings = rec.ratings || [];
+        const date = document.getElementById('ratingDate').value;
+        const isoDate = new Date(date).toISOString().slice(0,10);
+        const memberName = input.getAttribute('data-member-name');
+        const existingIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
+        if (existingIndex >= 0) {
+          if (!confirm('برای این تاریخ امتیاز ثبت شده است. آیا جایگزین شود؟')) return;
+          rec.ratings[existingIndex].score = score;
         } else {
-          data.push(0);
+          rec.ratings.push({ member: memberName, date: isoDate, score });
         }
+        await putBinRecord(rec);
+        showNotification('امتیاز ثبت شد');
+        renderRatingList();
+        renderMonthlyAverages();
       });
-      const canvas = document.getElementById('ratingChart');
-      if(!canvas) return;
-      canvas.classList.remove('hidden');
-      const ctx = canvas.getContext('2d');
-      if (window.ratingChartInstance) {
-        try { window.ratingChartInstance.destroy(); } catch(e){}
+    });
+  }
+
+  // ثبت یک‌جای تمام امتیازهای فرم برای تاریخ انتخاب‌شده
+  async function saveAllRatings() {
+    const date = document.getElementById('ratingDate').value;
+    if (!date) { alert('لطفاً تاریخ را انتخاب کنید'); return; }
+    const isoDate = new Date(date).toISOString().slice(0,10);
+    const rec = await getBinRecord();
+    rec.ratings = rec.ratings || [];
+    const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
+
+    members.forEach((member, idx) => {
+      const memberName = (typeof member === 'object') ? (member.name || member) : member;
+      const input = document.querySelector(`#rating_score_${idx}`);
+      if (!input) return;
+      const score = parseInt(input.value,10) || 0;
+      const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
+      if (score !== 0) {
+        if (exIndex >= 0) {
+          rec.ratings[exIndex].score = score;
+        } else {
+          rec.ratings.push({ member: memberName, date: isoDate, score });
+        }
+      } else {
+        // اگر امتیاز صفر است، از لیست حذف می‌کنیم تا رکوردها پاک نشوند
+        if (exIndex >= 0) {
+          rec.ratings.splice(exIndex, 1);
+        }
       }
-      window.ratingChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ label: 'میانگین امتیاز', data: data, backgroundColor: '#3b82f6' }] },
-        options: { responsive: true, scales: { y: { beginAtZero: true, suggestedMin: -50, suggestedMax: 50 } } }
+    });
+
+    await putBinRecord(rec);
+    showNotification('تمام امتیازها ثبت شدند');
+    renderRatingList();
+    renderMonthlyAverages();
+  }
+
+  // نمایش آمار ماهانه و نمودار (برای ماه فعلی ratingPD)
+  async function renderMonthlyAverages() {
+    const rec = await getBinRecord();
+    const ratings = rec.ratings || [];
+    const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
+
+    // فیلتر امتیازات همان ماه شمسی (ratingPD)
+    const filtered = ratings.filter(r => {
+      try {
+        const p = new persianDate(new Date(r.date));
+        return p.month() === ratingPD.month() && p.year() === ratingPD.year();
+      } catch (e) { return false; }
+    });
+
+    const averagesMap = {};
+    members.forEach(m => {
+      const name = (typeof m === 'object') ? (m.name || m) : m;
+      averagesMap[name] = [];
+    });
+    filtered.forEach(r => {
+      if (!averagesMap[r.member]) averagesMap[r.member] = [];
+      averagesMap[r.member].push(r.score);
+    });
+
+    const labels = [];
+    const data = [];
+    Object.keys(averagesMap).forEach(member => {
+      labels.push(member);
+      const scores = averagesMap[member] || [];
+      if (scores.length > 0) {
+        const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+        data.push(Math.round(avg*100)/100);
+      } else data.push(0);
+    });
+
+    // محاسبه بهترین همکار
+    let bestMember = null, bestScore = -Infinity;
+    Object.entries(averagesMap).forEach(([m, arr]) => {
+      if (arr.length === 0) return;
+      const avg = arr.reduce((a,b)=>a+b,0)/arr.length;
+      if (avg > bestScore) { bestScore = avg; bestMember = m; }
+    });
+
+    // نمایش متن و تاریخ
+    const ymEl = document.getElementById('ratingMonthYear');
+    if (ymEl) ymEl.textContent = ratingPD.format('MMMM YYYY') + ' (شمسی)';
+
+    const statsEl = document.getElementById('ratingsStats') || document.getElementById('ratingsStats') /* fallback */;
+    if (statsEl) {
+      const avgObj = {};
+      Object.entries(averagesMap).forEach(([m,arr])=>{
+        avgObj[m] = arr.length>0 ? (Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*100)/100) : 0;
       });
+      const existStats = document.getElementById('ratingsStats');
+      if (existStats) {
+        existStats.innerHTML = `<div class="text-sm">میانگین امتیازات ماه (${ratingPD.format('MMMM YYYY')}): ${JSON.stringify(avgObj)}</div>
+                               <div class="text-sm">بهترین همکار ماه: ${bestMember ? (bestMember + ' — ' + bestScore) : '—'}</div>`;
+      }
     }
 
-    function showOnlyRatingSection() {
-      const section = document.getElementById('ratingSection');
-      if (!section) return;
-      // مخفی کردن خواهر/برادرهای مستقیم ratingSection برای ساده‌سازی
-      const parent = section.parentElement;
-      if (parent) {
-        const siblings = parent.querySelectorAll(':scope > *');
-        siblings.forEach(el => {
-          if (el !== section && el.classList) el.classList.add('hidden');
+    // رسم نمودار
+    const canvas = document.getElementById('ratingChart');
+    if (!canvas) return;
+    canvas.classList.remove('hidden');
+    const ctx = canvas.getContext('2d');
+    if (ratingChartInstance) {
+      try { ratingChartInstance.destroy(); } catch(e) { console.warn(e); }
+    }
+    ratingChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'میانگین امتیاز', data, backgroundColor: '#3b82f6' }] },
+      options: { responsive: true, scales: { y: { beginAtZero: true, suggestedMin: -50, suggestedMax: 50 } } }
+    });
+  }
+
+  function showOnlyRatingSection() {
+    const section = document.getElementById('ratingSection');
+    if (!section) return;
+    const parent = section.parentElement;
+    if (parent) {
+      const siblings = parent.querySelectorAll(':scope > *');
+      siblings.forEach(el => {
+        if (el !== section && el.classList) el.classList.add('hidden');
+        if (el === section) el.classList.remove('hidden');
+      });
+    }
+    section.classList.remove('hidden');
+    // رندر فرم و آمار
+    renderRatingList();
+    renderMonthlyAverages();
+  }
+
+  // event bindings
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      const toggle = document.getElementById('ratingToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function(){
+          // اگر بخش باز است، فقط آن را بسته و صفحه اصلی را بازیابی می‌کنیم
+          const section = document.getElementById('ratingSection');
+          if (!section) return;
+          if (section.classList.contains('hidden')) {
+            // show rating only
+            showOnlyRatingSection();
+          } else {
+            // بازگردانی: نمایش همه فرزندان main container
+            const parent = section.parentElement;
+            if (parent) {
+              parent.querySelectorAll(':scope > *').forEach(el => el.classList.remove('hidden'));
+            }
+            section.classList.add('hidden');
+          }
         });
       }
-      section.classList.remove('hidden');
-    }
 
-    const ratingToggle = document.getElementById('ratingToggle');
-    if (ratingToggle) {
-      ratingToggle.addEventListener('click', () => {
-        showOnlyRatingSection();
-        renderRatingList();
-      });
+      // اضافه کردن event listener برای دکمه بستن - این بخش جدید است
+      const closeRatingBtn = document.getElementById('closeRatingSection');
+      if (closeRatingBtn) {
+        closeRatingBtn.addEventListener('click', function() {
+          const section = document.getElementById('ratingSection');
+          const parent = section.parentElement;
+          
+          // بازگردانی: نمایش همه فرزندان main container
+          if (parent) {
+            parent.querySelectorAll(':scope > *').forEach(el => el.classList.remove('hidden'));
+          }
+          section.classList.add('hidden');
+        });
+      }
+
+      // تاریخ امروز پیش‌فرض
+      const dateInput = document.getElementById('ratingDate');
+      if (dateInput) {
+        const todayISO = new Date().toISOString().slice(0,10);
+        dateInput.value = todayISO;
+        const p = new persianDate(new Date(todayISO));
+        const selEl = document.getElementById('selectedDateLabel');
+        if (selEl) selEl.innerText = 'تاریخ انتخاب‌شده (شمسی): ' + p.format('YYYY/MM/DD');
+        dateInput.addEventListener('change', (e)=>{
+          const g = new Date(e.target.value);
+          const pdate = new persianDate(g);
+          const sel = document.getElementById('selectedDateLabel');
+          if (sel) sel.innerText = 'تاریخ انتخاب‌شده (شمسی): ' + pdate.format('YYYY/MM/DD');
+          renderRatingList();
+        });
+      }
+
+      // دکمه‌ها
+      const saveAllBtn = document.getElementById('saveAllRatings');
+      if (saveAllBtn) saveAllBtn.addEventListener('click', saveAllRatings);
+      const prevBtn = document.getElementById('prevRatingMonth');
+      const nextBtn = document.getElementById('nextRatingMonth');
+      const showAvgBtn = document.getElementById('showMonthlyAverages');
+      if (prevBtn) prevBtn.addEventListener('click', ()=>{ ratingPD = ratingPD.subtract('months',1); renderMonthlyAverages(); });
+      if (nextBtn) nextBtn.addEventListener('click', ()=>{ ratingPD = ratingPD.add('months',1); renderMonthlyAverages(); });
+      if (showAvgBtn) showAvgBtn.addEventListener('click', renderMonthlyAverages);
+
+      // رندر اولیه (اگر بخشی قبلاً باز شد)
+      // renderRatingList();
+      // renderMonthlyAverages();
+    } catch (e) {
+      console.error('Rating init error', e);
     }
-    const prevBtn = document.getElementById('prevRatingMonth');
-    const nextBtn = document.getElementById('nextRatingMonth');
-    const showAvgBtn = document.getElementById('showMonthlyAverages');
-    if (prevBtn) prevBtn.addEventListener('click', () => { ratingDate = ratingDate.subtract('months', 1); renderRatingList(); });
-    if (nextBtn) nextBtn.addEventListener('click', () => { ratingDate = ratingDate.add('months', 1); renderRatingList(); });
-    if (showAvgBtn) showAvgBtn.addEventListener('click', showMonthlyAverages);
-  } catch(e) {
-    console.error('Rating feature init error:', e);
-  }
-});
+  });
+
+})(); 
 </script>
 <!-- End Rating feature -->
 
