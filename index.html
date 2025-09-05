@@ -450,6 +450,15 @@
             z-index: 9999;
             display: none;
         }
+
+@media (max-width: 640px) {
+    table {
+        font-size: 0.8rem;
+    }
+    table th, table td {
+        padding: 0.25rem;
+    }
+}
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
@@ -908,7 +917,7 @@
                 <button id="searchToggle" class="btn btn-secondary search-toggle">
                     <i class="fas fa-search mr-1"></i> جستجو
                 </button>
-                <button id="ratingToggle" class="btn btn-secondary"><i class="fas fa-star mr-1"></i> امتیازدهی به همکاران</button>
+                <button id="ratingToggle" class="btn btn-secondary"><i class="fas fa-star mr-1"></i> SCORE</button>
         <button id="settingsToggle" class="btn btn-secondary">
                     <i class="fas fa-cog mr-1"></i> تنظیمات
                 </button>
@@ -917,34 +926,48 @@
         
         
 <!-- Rating UI Section (inserted) -->
-<div id="ratingSection" class="section hidden">
-  <div class="flex justify-between items-center mb-2">
-    <h2 class="text-lg font-bold">امتیازدهی به همکاران</h2>
-    <div class="flex gap-1 items-center">
-      <button id="closeRatingSection" class="btn btn-danger btn-sm" title="بستن">
-        <i class="fas fa-times"></i>
-      </button>
-      <button id="prevRatingMonth" class="btn btn-primary btn-sm" title="ماه قبل"><i class="fas fa-chevron-right"></i></button>
-      <button id="nextRatingMonth" class="btn btn-primary btn-sm" title="ماه بعد"><i class="fas fa-chevron-left"></i></button>
+<div id="ratingSection" class="section hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+  <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">امتیازدهی به همکاران</h2>
+      <div class="flex gap-1 items-center">
+        <button id="closeRatingSection" class="btn btn-danger btn-sm" title="بستن">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
     </div>
+
+    <div class="mb-4">
+      <label for="ratingDate" class="block mb-1">انتخاب تاریخ (برای ذخیره: میلادی)</label>
+      <input type="date" id="ratingDate" class="border p-2 rounded w-full">
+      <div id="selectedDateLabel" class="mt-1 text-sm text-gray-600"></div>
+    </div>
+
+    <div id="ratingList" class="mb-4 overflow-x-auto"></div>
+
+    <div class="flex flex-col sm:flex-row gap-2 mb-4">
+      <button id="saveAllRatings" class="btn btn-success flex-1">
+        <i class="fas fa-save mr-1"></i> ثبت یک‌جای امتیازها
+      </button>
+      <button id="showMonthlyAverages" class="btn btn-secondary flex-1">
+        <i class="fas fa-chart-bar mr-1"></i> نمایش آمار ماهانه
+      </button>
+    </div>
+
+    <canvas id="ratingChart" class="hidden w-full" style="height:260px;"></canvas>
+    
+    <div class="flex flex-col sm:flex-row justify-center gap-2 mt-4">
+      <button id="prevRatingMonth" class="btn btn-primary" title="ماه قبل">
+        <i class="fas fa-chevron-right mr-1"></i> ماه قبل
+      </button>
+      <button id="nextRatingMonth" class="btn btn-primary" title="ماه بعد">
+        ماه بعد <i class="fas fa-chevron-left ml-1"></i>
+      </button>
+    </div>
+    
+    <div id="ratingMonthYear" class="mt-2 text-sm text-gray-600 text-center"></div>
+    <div id="ratingsStats" class="mt-2 text-sm overflow-x-auto"></div>
   </div>
-
-  <div class="mb-2">
-    <label for="ratingDate">انتخاب تاریخ (برای ذخیره: میلادی)</label>
-    <input type="date" id="ratingDate" class="border p-1 rounded" />
-    <div id="selectedDateLabel" class="mt-1 text-sm text-gray-600"></div>
-  </div>
-
-  <div id="ratingList" class="mb-2"></div>
-
-  <div class="flex gap-2 mb-2">
-    <button id="saveAllRatings" class="btn btn-success"><i class="fas fa-save mr-1"></i> ثبت یک‌جای امتیازها</button>
-    <button id="showMonthlyAverages" class="btn btn-secondary"><i class="fas fa-chart-bar mr-1"></i> نمایش آمار ماهانه</button>
-  </div>
-
-  <canvas id="ratingChart" class="hidden" style="max-width:100%;height:260px;"></canvas>
-  <div id="ratingMonthYear" class="mt-2 text-sm text-gray-600"></div>
-  <div id="ratingsStats" class="mt-2"></div>
 </div>
 <!-- End Rating UI Section -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1496,6 +1519,8 @@
         let teamMembers = [];
         let shifts = {};
         let equipmentList = [];
+let missions = [];
+let ratings = []; // اضافه کردن این خط
         
         // تنظیمات پشتیبان‌گیری
         let backupSettings = JSON.parse(localStorage.getItem('backupSettings')) || {
@@ -1567,31 +1592,32 @@ function goToToday() {
         }
 
         // بارگذاری اولیه داده‌ها از فضای ابری
-        async function loadInitialData() {
-            showLoading();
-            try {
-                const response = await fetch(API_URL, {
-                    headers: {
-                        'X-Master-Key': API_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                });
+       async function loadInitialData() {
+    showLoading();
+    try {
+        const response = await fetch(API_URL, {
+            headers: {
+                'X-Master-Key': API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
 
-                if (!response.ok) throw new Error('خطا در بارگذاری داده‌ها');
+        if (!response.ok) throw new Error('خطا در بارگذاری داده‌ها');
 
-                const data = await response.json();
-                if (data.record) {
-                    // بارگذاری داده‌ها از دیتابیس
-                    tasks = data.record.tasks || {};
-                    notes = data.record.notes || {};
-                    holidays = data.record.holidays || [];
-                    teamMembers = data.record.teamMembers || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
-                    shifts = data.record.shifts || {
-                        pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
-                        startDate: new persianDate().format('YYYY-MM-DD')
-                    };
-                    equipmentList = data.record.equipmentList || [];
-                    missions = data.record.missions || [];
+        const data = await response.json();
+        if (data.record) {
+            // بارگذاری داده‌ها از دیتابیس
+            tasks = data.record.tasks || {};
+            notes = data.record.notes || {};
+            holidays = data.record.holidays || [];
+            teamMembers = data.record.teamMembers || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
+            shifts = data.record.shifts || {
+                pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
+                startDate: new persianDate().format('YYYY-MM-DD')
+            };
+            equipmentList = data.record.equipmentList || [];
+            missions = data.record.missions || [];
+            ratings = data.record.ratings || []; // اضافه کردن این خط
                    renderMissions();   // ✅ نمایش مأموریت‌ها در UI
 
 
@@ -1674,63 +1700,65 @@ function goToToday() {
         }
 
         // ذخیره داده‌ها در فضای ابری
-        async function saveToCloud() {
-            showLoading();
-            try {
-                const dataToSave = { 
-                    tasks, 
-                    notes, 
-                    holidays, 
-                    teamMembers, 
-                    shifts,
-                    equipmentList,
-                    appPassword,
-                    missions,
-                    backupSettings
-                };
+async function saveToCloud() {
+    showLoading();
+    try {
+        const dataToSave = { 
+            tasks, 
+            notes, 
+            holidays, 
+            teamMembers, 
+            shifts,
+            equipmentList,
+            appPassword,
+            missions,
+            backupSettings,
+            ratings // اضافه کردن این خط
+        };
 
-                const response = await fetch(API_URL, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': API_KEY,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(dataToSave)
-                });
+        const response = await fetch(API_URL, {
+            method: 'PUT',
+            headers: {
+                'X-Master-Key': API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataToSave)
+        });
 
-                if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
-                
-                const result = await response.json();
-                console.log('Data saved to cloud successfully:', result);
-                showNotification('تغییرات با موفقیت ذخیره شد');
-                return result;
-            } catch (error) {
-                console.error('Error saving to cloud:', error);
-                showNotification('خطا در ذخیره تغییرات', false, error.message);
-                throw error;
-            } finally {
-                hideLoading();
-            }
-        }
+        if (!response.ok) throw new Error('خطا در ذخیره داده‌ها');
+        
+        const result = await response.json();
+        console.log('Data saved to cloud successfully:', result);
+        showNotification('تغییرات با موفقیت ذخیره شد');
+        return result;
+    } catch (error) {
+        console.error('Error saving to cloud:', error);
+        showNotification('خطا در ذخیره تغییرات', false, error.message);
+        throw error;
+    } finally {
+        hideLoading();
+    }
+}
 
         // ذخیره داده‌ها در localStorage
-        function saveTasks() {
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            localStorage.setItem('notes', JSON.stringify(notes));
-            localStorage.setItem('holidays', JSON.stringify(holidays));
-            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
-            localStorage.setItem('shifts', JSON.stringify(shifts));
-            localStorage.setItem('equipment', JSON.stringify(equipmentList));
-            localStorage.setItem('appPassword', appPassword);
-            localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
-            localStorage.setItem('missions', JSON.stringify(missions));
-            updateTaskStats();
-            
-            // ذخیره در فضای ابری
-            saveToCloud().catch(error => {
-                console.error('Error saving to cloud:', error);
-            });
-        }
+function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    localStorage.setItem('notes', JSON.stringify(notes));
+    localStorage.setItem('holidays', JSON.stringify(holidays));
+    localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+    localStorage.setItem('shifts', JSON.stringify(shifts));
+    localStorage.setItem('equipment', JSON.stringify(equipmentList));
+    localStorage.setItem('appPassword', appPassword);
+    localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
+    localStorage.setItem('missions', JSON.stringify(missions));
+    localStorage.setItem('ratings', JSON.stringify(ratings)); // اضافه کردن این خط
+    updateTaskStats();
+    
+    // ذخیره در فضای ابری
+    saveToCloud().catch(error => {
+        console.error('Error saving to cloud:', error);
+    });
+}
 
         function isHoliday(date) {
             const dateStr = date.format('YYYY-MM-DD');
@@ -3705,7 +3733,7 @@ document.getElementById('toggleEquipment').addEventListener('click', toggleEquip
 
 
 // متغیرهای مربوط به ماموریت‌ها
-let missions = [];
+
 let currentMissionsFilter = '';
 
 // تابع نمایش/مخفی کردن بخش ماموریت‌ها
@@ -3763,7 +3791,8 @@ async function saveMissions() {
             equipmentList,
             appPassword,
             missions, // اضافه کردن ماموریت‌ها به داده‌های ذخیره شده
-            backupSettings
+            backupSettings,
+            ratings
         };
 
         const response = await fetch(API_URL, {
@@ -4111,72 +4140,137 @@ renderMissions();
     });
 
     await putBinRecord(rec);
+    ratings = rec.ratings;
     showNotification('تمام امتیازها ثبت شدند');
     renderRatingList();
     renderMonthlyAverages();
   }
 
   // نمایش آمار ماهانه و نمودار (برای ماه فعلی ratingPD)
-  async function renderMonthlyAverages() {
+// تابع نمایش آمار ماهانه به صورت جدولی
+async function renderMonthlyAverages() {
     const rec = await getBinRecord();
     const ratings = rec.ratings || [];
     const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
 
     // فیلتر امتیازات همان ماه شمسی (ratingPD)
     const filtered = ratings.filter(r => {
-      try {
-        const p = new persianDate(new Date(r.date));
-        return p.month() === ratingPD.month() && p.year() === ratingPD.year();
-      } catch (e) { return false; }
+        try {
+            const p = new persianDate(new Date(r.date));
+            return p.month() === ratingPD.month() && p.year() === ratingPD.year();
+        } catch (e) { return false; }
     });
 
     const averagesMap = {};
+    const countMap = {};
+    
     members.forEach(m => {
-      const name = (typeof m === 'object') ? (m.name || m) : m;
-      averagesMap[name] = [];
+        const name = (typeof m === 'object') ? (m.name || m) : m;
+        averagesMap[name] = [];
+        countMap[name] = 0;
     });
+    
     filtered.forEach(r => {
-      if (!averagesMap[r.member]) averagesMap[r.member] = [];
-      averagesMap[r.member].push(r.score);
+        if (!averagesMap[r.member]) {
+            averagesMap[r.member] = [];
+            countMap[r.member] = 0;
+        }
+        averagesMap[r.member].push(r.score);
+        countMap[r.member]++;
     });
 
+    // ایجاد متغیرهای labels و data برای نمودار
     const labels = [];
     const data = [];
     Object.keys(averagesMap).forEach(member => {
-      labels.push(member);
-      const scores = averagesMap[member] || [];
-      if (scores.length > 0) {
-        const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
-        data.push(Math.round(avg*100)/100);
-      } else data.push(0);
+        labels.push(member);
+        const scores = averagesMap[member] || [];
+        if (scores.length > 0) {
+            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+            data.push(Math.round(avg * 100) / 100);
+        } else {
+            data.push(0);
+        }
     });
 
-    // محاسبه بهترین همکار
-    let bestMember = null, bestScore = -Infinity;
-    Object.entries(averagesMap).forEach(([m, arr]) => {
-      if (arr.length === 0) return;
-      const avg = arr.reduce((a,b)=>a+b,0)/arr.length;
-      if (avg > bestScore) { bestScore = avg; bestMember = m; }
+    // ایجاد جدول
+    const statsEl = document.getElementById('ratingsStats');
+    if (!statsEl) return;
+
+    // پاک کردن محتوای قبلی
+    statsEl.innerHTML = '';
+
+    // ایجاد عنوان جدول
+    const title = document.createElement('h3');
+    title.className = 'text-md font-bold mb-2 text-center';
+    title.textContent = `آمار امتیازات ماه ${ratingPD.format('MMMM YYYY')}`;
+    statsEl.appendChild(title);
+
+    // ایجاد جدول
+    const table = document.createElement('table');
+    table.className = 'w-full border-collapse border border-gray-300 bg-white text-sm';
+
+    // ایجاد هدر جدول
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr class="bg-gray-100">
+            <th class="border border-gray-300 p-2 text-center">ردیف</th>
+            <th class="border border-gray-300 p-2 text-center">نام همکار</th>
+            <th class="border border-gray-300 p-2 text-center">میانگین امتیاز</th>
+            <th class="border border-gray-300 p-2 text-center">تعداد امتیازات</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    // ایجاد بدنه جدول
+    const tbody = document.createElement('tbody');
+    
+    // مرتب سازی بر اساس میانگین امتیاز (نزولی)
+    const sortedMembers = Object.keys(averagesMap).sort((a, b) => {
+        const avgA = averagesMap[a].length > 0 ? 
+            averagesMap[a].reduce((sum, score) => sum + score, 0) / averagesMap[a].length : 0;
+        const avgB = averagesMap[b].length > 0 ? 
+            averagesMap[b].reduce((sum, score) => sum + score, 0) / averagesMap[b].length : 0;
+        return avgB - avgA;
     });
 
-    // نمایش متن و تاریخ
-    const ymEl = document.getElementById('ratingMonthYear');
-    if (ymEl) ymEl.textContent = ratingPD.format('MMMM YYYY') + ' (شمسی)';
+    // پر کردن ردیف‌های جدول
+    sortedMembers.forEach((member, index) => {
+        const scores = averagesMap[member] || [];
+        const count = countMap[member] || 0;
+        const avg = scores.length > 0 ? 
+            (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(2) : '0.00';
 
-    const statsEl = document.getElementById('ratingsStats') || document.getElementById('ratingsStats') /* fallback */;
-    if (statsEl) {
-      const avgObj = {};
-      Object.entries(averagesMap).forEach(([m,arr])=>{
-        avgObj[m] = arr.length>0 ? (Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*100)/100) : 0;
-      });
-      const existStats = document.getElementById('ratingsStats');
-      if (existStats) {
-        existStats.innerHTML = `<div class="text-sm">میانگین امتیازات ماه (${ratingPD.format('MMMM YYYY')}): ${JSON.stringify(avgObj)}</div>
-                               <div class="text-sm">بهترین همکار ماه: ${bestMember ? (bestMember + ' — ' + bestScore) : '—'}</div>`;
-      }
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+        row.innerHTML = `
+            <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
+            <td class="border border-gray-300 p-2 text-center">${member}</td>
+            <td class="border border-gray-300 p-2 text-center">${avg}</td>
+            <td class="border border-gray-300 p-2 text-center">${count}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    statsEl.appendChild(table);
+
+    // نمایش بهترین همکار ماه
+    if (sortedMembers.length > 0) {
+        const bestMember = sortedMembers[0];
+        const bestScore = averagesMap[bestMember].length > 0 ? 
+            (averagesMap[bestMember].reduce((sum, score) => sum + score, 0) / 
+             averagesMap[bestMember].length).toFixed(2) : '0.00';
+        
+        const bestMemberEl = document.createElement('div');
+        bestMemberEl.className = 'mt-4 p-3 bg-green-100 border border-green-300 rounded text-center';
+        bestMemberEl.innerHTML = `
+            <strong>بهترین همکار ماه:</strong> ${bestMember} با میانگین امتیاز ${bestScore}
+        `;
+        statsEl.appendChild(bestMemberEl);
     }
 
-    // رسم نمودار
+    // رسم نمودار (با استفاده از متغیرهای labels و data که قبلاً تعریف شده‌اند)
     const canvas = document.getElementById('ratingChart');
     if (!canvas) return;
     canvas.classList.remove('hidden');
@@ -4189,7 +4283,7 @@ renderMissions();
       data: { labels, datasets: [{ label: 'میانگین امتیاز', data, backgroundColor: '#3b82f6' }] },
       options: { responsive: true, scales: { y: { beginAtZero: true, suggestedMin: -50, suggestedMax: 50 } } }
     });
-  }
+}
 
   function showOnlyRatingSection() {
     const section = document.getElementById('ratingSection');
