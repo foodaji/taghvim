@@ -61,6 +61,26 @@
             padding: 1rem;
         }
 
+/* استایل برای دکمه‌های حرکت بین روزها */
+.rating-day-nav-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--secondary);
+    color: white;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rating-day-nav-btn:hover {
+    background-color: var(--secondary-hover);
+}
+
+.rating-day-nav-btn i {
+    font-size: 0.8rem;
+}
+
 .mission-item {
     position: relative;
     padding: 1rem;
@@ -937,11 +957,21 @@
       </div>
     </div>
 
-    <div class="mb-4">
-      <label for="ratingDate" class="block mb-1">انتخاب تاریخ (برای ذخیره: میلادی)</label>
-      <input type="date" id="ratingDate" class="border p-2 rounded w-full">
-      <div id="selectedDateLabel" class="mt-1 text-sm text-gray-600"></div>
+<div class="mb-4">
+    <label for="ratingDate" class="block mb-1">انتخاب تاریخ (برای ذخیره: میلادی)</label>
+    <input type="date" id="ratingDate" class="border p-2 rounded w-full">
+    <div id="selectedDateLabel" class="mt-1 text-sm text-gray-600"></div>
+    
+    <!-- اضافه کردن دکمه‌های حرکت به روزهای قبل و بعد -->
+    <div class="flex justify-between mt-2">
+        <button id="prevRatingDay" class="btn btn-secondary">
+            <i class="fas fa-chevron-right ml-1"></i> روز قبل
+        </button>
+        <button id="nextRatingDay" class="btn btn-secondary">
+            روز بعد <i class="fas fa-chevron-left mr-1"></i>
+        </button>
     </div>
+</div>
 
     <div id="ratingList" class="mb-4 overflow-x-auto"></div>
 
@@ -1541,6 +1571,8 @@ let ratings = []; // اضافه کردن این خط
         let searchType = 'tasks'; // 'tasks' یا 'notes'
         let lastError = null; // آخرین خطای رخ داده
 
+
+
         // نمایش دایره چرخان
         function showLoading() {
             document.getElementById('loadingSpinner').style.display = 'block';
@@ -1550,6 +1582,20 @@ let ratings = []; // اضافه کردن این خط
         function hideLoading() {
             document.getElementById('loadingSpinner').style.display = 'none';
         }
+
+
+function getRatedDates() {
+    const ratedDates = new Set();
+    if (ratings && Array.isArray(ratings)) {
+        ratings.forEach(rating => {
+            if (rating.date) {
+                ratedDates.add(rating.date);
+            }
+        });
+    }
+    return Array.from(ratedDates);
+}
+
 
 function goToToday() {
     currentDate = new persianDate();
@@ -4014,7 +4060,6 @@ renderMissions();
 
 
 
-
 <!-- Rating feature: robust wiring -->
 <script>
 // بازنویسی کامل بخش امتیازدهی — ذخیره در JSONBin و نمایش آمار ماهانه
@@ -4068,129 +4113,145 @@ renderMissions();
     const dateInput = document.getElementById('ratingDate');
     const selectedDateISO = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0,10);
 
-    members.forEach((member, idx) => {
-      const memberName = (typeof member === 'object') ? (member.name || member) : member;
-      const row = document.createElement('div');
-      row.className = 'flex items-center justify-between border p-2 mb-2 rounded';
-      const existing = ratings.find(r=> r.member === memberName && r.date === selectedDateISO);
-      const val = existing ? existing.score : 0;
-      row.innerHTML = `
-        <span style="flex:1">${memberName}</span>
-        <input type="number" id="rating_score_${idx}" data-member-index="${idx}" data-member-name="${memberName}" class="border p-1 w-20 ml-2" min="-50" max="50" step="1" value="${val}">
-        <button class="btn btn-primary btn-sm" type="button" data-member-index="${idx}" style="margin-left:0.5rem" id="rating_submit_${idx}">ثبت</button>
-      `;
-      list.appendChild(row);
-
-      // دکمه ثبت تک‌تک
-      const submitBtn = row.querySelector(`#rating_submit_${idx}`);
-      submitBtn.addEventListener('click', async () => {
-        const input = row.querySelector(`#rating_score_${idx}`);
-        let score = parseInt(input.value,10);
-        if (isNaN(score) || score < -50 || score > 50) {
-          alert('امتیاز باید عددی بین -50 تا +50 باشد');
-          return;
-        }
-        const rec = await getBinRecord();
-        rec.ratings = rec.ratings || [];
-        const date = document.getElementById('ratingDate').value;
-        const isoDate = new Date(date).toISOString().slice(0,10);
-        const memberName = input.getAttribute('data-member-name');
-        const existingIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
-        if (existingIndex >= 0) {
-          if (!confirm('برای این تاریخ امتیاز ثبت شده است. آیا جایگزین شود؟')) return;
-          rec.ratings[existingIndex].score = score;
-        } else {
-          rec.ratings.push({ member: memberName, date: isoDate, score });
-        }
-        await putBinRecord(rec);
-        showNotification('امتیاز ثبت شد');
-        renderRatingList();
-        renderMonthlyAverages();
-      });
-    });
-  }
+members.forEach((member, idx) => {
+  const memberName = (typeof member === 'object') ? (member.name || member) : member;
+  const row = document.createElement('div');
+  row.className = 'flex items-center justify-between border p-2 mb-2 rounded';
+  const existing = ratings.find(r=> r.member === memberName && r.date === selectedDateISO);
+  
+  // اگر امتیازی وجود ندارد یا امتیاز 0 است، فیلد را خالی بگذار
+  const val = existing && existing.score !== 0 ? existing.score.toString() : '';
+  
+  row.innerHTML = '<span style="flex:1">' + memberName + '</span><input type="number" id="rating_score_' + idx + '" data-member-index="' + idx + '" data-member-name="' + memberName + '" class="border p-1 w-20 ml-2" min="-50" max="50" step="1" value="' + val + '">';
+  list.appendChild(row);
+});
+  } // بستن تابع renderRatingList
 
   // ثبت یک‌جای تمام امتیازهای فرم برای تاریخ انتخاب‌شده
-  async function saveAllRatings() {
-    const date = document.getElementById('ratingDate').value;
-    if (!date) { alert('لطفاً تاریخ را انتخاب کنید'); return; }
-    const isoDate = new Date(date).toISOString().slice(0,10);
-    const rec = await getBinRecord();
-    rec.ratings = rec.ratings || [];
-    const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
-
-    members.forEach((member, idx) => {
-      const memberName = (typeof member === 'object') ? (member.name || member) : member;
-      const input = document.querySelector(`#rating_score_${idx}`);
-      if (!input) return;
-      const score = parseInt(input.value,10) || 0;
-      const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
-      if (score !== 0) {
-        if (exIndex >= 0) {
-          rec.ratings[exIndex].score = score;
-        } else {
-          rec.ratings.push({ member: memberName, date: isoDate, score });
-        }
-      } else {
-        // اگر امتیاز صفر است، از لیست حذف می‌کنیم تا رکوردها پاک نشوند
-        if (exIndex >= 0) {
-          rec.ratings.splice(exIndex, 1);
-        }
-      }
-    });
-
-    await putBinRecord(rec);
-    ratings = rec.ratings;
-    showNotification('تمام امتیازها ثبت شدند');
-    renderRatingList();
-    renderMonthlyAverages();
+// در تابع saveAllRatings، این تغییرات را اعمال کنید:
+async function saveAllRatings() {
+  const date = document.getElementById('ratingDate').value;
+  if (!date) { 
+    alert('لطفاً تاریخ را انتخاب کنید'); 
+    return; 
   }
 
+  // دریافت رکورد از سرور
+  const rec = await getBinRecord();
+  const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
+  
+  // تعریف isoDate در اینجا، قبل از استفاده در حلقه
+  const isoDate = new Date(date).toISOString().slice(0,10);
+  
+  // بررسی اعتبار مقادیر
+  let isValid = true;
+  
+  members.forEach((member, idx) => {
+    const input = document.querySelector('#rating_score_' + idx);
+    if (input) {
+      const value = input.value.trim();
+      
+      // اگر فیلد خالی است، آن را معتبر در نظر بگیر
+      if (value === '') {
+        input.style.borderColor = '';
+        return;
+      }
+      
+      const score = parseInt(value, 10);
+      
+      // فقط اگر عدد وارد شده خارج از محدوده باشد، خطا نشان بده
+      if (isNaN(score) || score < -50 || score > 50) {
+        isValid = false;
+        input.style.borderColor = 'red';
+      } else {
+        input.style.borderColor = '';
+      }
+    }
+  });
+
+  if (!isValid) {
+    alert('لطفاً مقادیر بین -50 تا 50 وارد کنید');
+    return;
+  }
+
+  // حالا حلقه ذخیره‌سازی - isoDate در این scope در دسترس است
+  members.forEach((member, idx) => {
+    const memberName = (typeof member === 'object') ? (member.name || member) : member;
+    const input = document.querySelector('#rating_score_' + idx);
+    if (!input) return;
+    
+    const value = input.value.trim();
+    
+    // اگر فیلد خالی است، از ذخیره‌سازی صرف نظر کن و رکورد موجود را حذف کن
+    if (value === '') {
+      const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
+      if (exIndex >= 0) {
+        rec.ratings.splice(exIndex, 1);
+      }
+      return;
+    }
+    
+    const score = parseInt(value,10);
+    const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
+    
+    if (exIndex >= 0) {
+      rec.ratings[exIndex].score = score;
+    } else {
+      rec.ratings.push({ member: memberName, date: isoDate, score });
+    }
+  });
+
+  await putBinRecord(rec);
+  ratings = rec.ratings;
+  showNotification('تمام امتیازها ثبت شدند');
+  renderRatingList();
+  renderMonthlyAverages();
+}
+
   // نمایش آمار ماهانه و نمودار (برای ماه فعلی ratingPD)
-// تابع نمایش آمار ماهانه به صورت جدولی
-async function renderMonthlyAverages() {
+  async function renderMonthlyAverages() {
     const rec = await getBinRecord();
     const ratings = rec.ratings || [];
     const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
 
     // فیلتر امتیازات همان ماه شمسی (ratingPD)
     const filtered = ratings.filter(r => {
-        try {
-            const p = new persianDate(new Date(r.date));
-            return p.month() === ratingPD.month() && p.year() === ratingPD.year();
-        } catch (e) { return false; }
+      try {
+        const p = new persianDate(new Date(r.date));
+        return p.month() === ratingPD.month() && p.year() === ratingPD.year();
+      } catch (e) { return false; }
     });
 
     const averagesMap = {};
     const countMap = {};
     
     members.forEach(m => {
-        const name = (typeof m === 'object') ? (m.name || m) : m;
-        averagesMap[name] = [];
-        countMap[name] = 0;
+      const name = (typeof m === 'object') ? (m.name || m) : m;
+      averagesMap[name] = [];
+      countMap[name] = 0;
     });
     
     filtered.forEach(r => {
-        if (!averagesMap[r.member]) {
-            averagesMap[r.member] = [];
-            countMap[r.member] = 0;
-        }
-        averagesMap[r.member].push(r.score);
-        countMap[r.member]++;
+      if (!averagesMap[r.member]) {
+        averagesMap[r.member] = [];
+        countMap[r.member] = 0;
+      }
+      averagesMap[r.member].push(r.score);
+      countMap[r.member]++;
     });
 
     // ایجاد متغیرهای labels و data برای نمودار
     const labels = [];
     const data = [];
     Object.keys(averagesMap).forEach(member => {
-        labels.push(member);
-        const scores = averagesMap[member] || [];
-        if (scores.length > 0) {
-            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-            data.push(Math.round(avg * 100) / 100);
-        } else {
-            data.push(0);
-        }
+      labels.push(member);
+      const scores = averagesMap[member] || [];
+      if (scores.length > 0) {
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        data.push(Math.round(avg * 100) / 100);
+      } else {
+        data.push(0);
+      }
     });
 
     // ایجاد جدول
@@ -4203,7 +4264,7 @@ async function renderMonthlyAverages() {
     // ایجاد عنوان جدول
     const title = document.createElement('h3');
     title.className = 'text-md font-bold mb-2 text-center';
-    title.textContent = `آمار امتیازات ماه ${ratingPD.format('MMMM YYYY')}`;
+    title.textContent = 'آمار امتیازات ماه ' + ratingPD.format('MMMM YYYY');
     statsEl.appendChild(title);
 
     // ایجاد جدول
@@ -4212,14 +4273,7 @@ async function renderMonthlyAverages() {
 
     // ایجاد هدر جدول
     const thead = document.createElement('thead');
-    thead.innerHTML = `
-        <tr class="bg-gray-100">
-            <th class="border border-gray-300 p-2 text-center">ردیف</th>
-            <th class="border border-gray-300 p-2 text-center">نام همکار</th>
-            <th class="border border-gray-300 p-2 text-center">میانگین امتیاز</th>
-            <th class="border border-gray-300 p-2 text-center">تعداد امتیازات</th>
-        </tr>
-    `;
+    thead.innerHTML = '<tr class="bg-gray-100"><th class="border border-gray-300 p-2 text-center">ردیف</th><th class="border border-gray-300 p-2 text-center">نام همکار</th><th class="border border-gray-300 p-2 text-center">میانگین امتیاز</th><th class="border border-gray-300 p-2 text-center">تعداد امتیازات</th></tr>';
     table.appendChild(thead);
 
     // ایجاد بدنه جدول
@@ -4243,12 +4297,7 @@ async function renderMonthlyAverages() {
 
         const row = document.createElement('tr');
         row.className = index % 2 === 0 ? 'bg-gray-50' : 'bg-white';
-        row.innerHTML = `
-            <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
-            <td class="border border-gray-300 p-2 text-center">${member}</td>
-            <td class="border border-gray-300 p-2 text-center">${avg}</td>
-            <td class="border border-gray-300 p-2 text-center">${count}</td>
-        `;
+        row.innerHTML = '<td class="border border-gray-300 p-2 text-center">' + (index + 1) + '</td><td class="border border-gray-300 p-2 text-center">' + member + '</td><td class="border border-gray-300 p-2 text-center">' + avg + '</td><td class="border border-gray-300 p-2 text-center">' + count + '</td>';
         tbody.appendChild(row);
     });
 
@@ -4264,13 +4313,11 @@ async function renderMonthlyAverages() {
         
         const bestMemberEl = document.createElement('div');
         bestMemberEl.className = 'mt-4 p-3 bg-green-100 border border-green-300 rounded text-center';
-        bestMemberEl.innerHTML = `
-            <strong>بهترین همکار ماه:</strong> ${bestMember} با میانگین امتیاز ${bestScore}
-        `;
+        bestMemberEl.innerHTML = '<strong>بهترین همکار ماه:</strong> ' + bestMember + ' با میانگین امتیاز ' + bestScore;
         statsEl.appendChild(bestMemberEl);
     }
 
-    // رسم نمودار (با استفاده از متغیرهای labels و data که قبلاً تعریف شده‌اند)
+    // رسم نمودار
     const canvas = document.getElementById('ratingChart');
     if (!canvas) return;
     canvas.classList.remove('hidden');
@@ -4283,7 +4330,46 @@ async function renderMonthlyAverages() {
       data: { labels, datasets: [{ label: 'میانگین امتیاز', data, backgroundColor: '#3b82f6' }] },
       options: { responsive: true, scales: { y: { beginAtZero: true, suggestedMin: -50, suggestedMax: 50 } } }
     });
+  }
+
+
+// اضافه کردن توابع مدیریت دکمه‌های روز قبل و بعد
+function goToPrevRatingDay() {
+    const currentDate = new Date(document.getElementById('ratingDate').value);
+    if (isNaN(currentDate.getTime())) {
+        // اگر تاریخ معتبر نیست، از امروز شروع کن
+        currentDate = new Date();
+    }
+    currentDate.setDate(currentDate.getDate() - 1);
+    document.getElementById('ratingDate').value = currentDate.toISOString().slice(0, 10);
+    updateSelectedDateLabel();
+    renderRatingList();
 }
+
+function goToNextRatingDay() {
+    const currentDate = new Date(document.getElementById('ratingDate').value);
+    if (isNaN(currentDate.getTime())) {
+        // اگر تاریخ معتبر نیست، از امروز شروع کن
+        currentDate = new Date();
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+    document.getElementById('ratingDate').value = currentDate.toISOString().slice(0, 10);
+    updateSelectedDateLabel();
+    renderRatingList();
+}
+
+function updateSelectedDateLabel() {
+    const dateInput = document.getElementById('ratingDate');
+    if (dateInput && dateInput.value) {
+        const g = new Date(dateInput.value);
+        const pdate = new persianDate(g);
+        const sel = document.getElementById('selectedDateLabel');
+        if (sel) sel.innerText = 'تاریخ انتخاب‌شده (شمسی): ' + pdate.format('YYYY/MM/DD');
+    }
+}
+
+
+
 
   function showOnlyRatingSection() {
     const section = document.getElementById('ratingSection');
@@ -4303,19 +4389,18 @@ async function renderMonthlyAverages() {
   }
 
   // event bindings
+
+
   document.addEventListener('DOMContentLoaded', function(){
     try {
       const toggle = document.getElementById('ratingToggle');
       if (toggle) {
         toggle.addEventListener('click', function(){
-          // اگر بخش باز است، فقط آن را بسته و صفحه اصلی را بازیابی می‌کنیم
           const section = document.getElementById('ratingSection');
           if (!section) return;
           if (section.classList.contains('hidden')) {
-            // show rating only
             showOnlyRatingSection();
           } else {
-            // بازگردانی: نمایش همه فرزندان main container
             const parent = section.parentElement;
             if (parent) {
               parent.querySelectorAll(':scope > *').forEach(el => el.classList.remove('hidden'));
@@ -4325,14 +4410,23 @@ async function renderMonthlyAverages() {
         });
       }
 
-      // اضافه کردن event listener برای دکمه بستن - این بخش جدید است
+ const prevRatingDayBtn = document.getElementById('prevRatingDay');
+      const nextRatingDayBtn = document.getElementById('nextRatingDay');
+      
+      if (prevRatingDayBtn) {
+        prevRatingDayBtn.addEventListener('click', goToPrevRatingDay);
+      }
+      
+      if (nextRatingDayBtn) {
+        nextRatingDayBtn.addEventListener('click', goToNextRatingDay);
+      }
+
       const closeRatingBtn = document.getElementById('closeRatingSection');
       if (closeRatingBtn) {
         closeRatingBtn.addEventListener('click', function() {
           const section = document.getElementById('ratingSection');
           const parent = section.parentElement;
           
-          // بازگردانی: نمایش همه فرزندان main container
           if (parent) {
             parent.querySelectorAll(':scope > *').forEach(el => el.classList.remove('hidden'));
           }
@@ -4366,10 +4460,6 @@ async function renderMonthlyAverages() {
       if (prevBtn) prevBtn.addEventListener('click', ()=>{ ratingPD = ratingPD.subtract('months',1); renderMonthlyAverages(); });
       if (nextBtn) nextBtn.addEventListener('click', ()=>{ ratingPD = ratingPD.add('months',1); renderMonthlyAverages(); });
       if (showAvgBtn) showAvgBtn.addEventListener('click', renderMonthlyAverages);
-
-      // رندر اولیه (اگر بخشی قبلاً باز شد)
-      // renderRatingList();
-      // renderMonthlyAverages();
     } catch (e) {
       console.error('Rating init error', e);
     }
