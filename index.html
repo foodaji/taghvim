@@ -7,6 +7,11 @@
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
     <style>
         :root {
             --primary: #3b82f6;
@@ -959,11 +964,11 @@
 
 <div class="mb-4">
     <label for="ratingDate" class="block mb-1">انتخاب تاریخ (برای ذخیره: میلادی)</label>
-    <input type="date" id="ratingDate" class="border p-2 rounded w-full">
+    <input type="hidden" id="ratingDate">
     <div id="selectedDateLabel" class="mt-1 text-sm text-gray-600"></div>
-    
-    <!-- اضافه کردن دکمه‌های حرکت به روزهای قبل و بعد -->
-    <div class="flex justify-between mt-2">
+    <div class="mt-2" id="ratingPersianCalendarContainer">
+     <!-- اضافه کردن دکمه‌های حرکت به روزهای قبل و بعد -->
+     <div class="flex justify-between items-center mb-2">
         <button id="prevRatingDay" class="btn btn-secondary">
             <i class="fas fa-chevron-right ml-1"></i> روز قبل
         </button>
@@ -971,9 +976,11 @@
             روز بعد <i class="fas fa-chevron-left mr-1"></i>
         </button>
     </div>
+      <div id="ratingPersianCalendar" class="grid grid-cols-7 gap-1 text-center bg-gray-50 p-2 rounded"></div>
+      <div class="text-xs text-gray-500 mt-1">روزهای دارای امتیاز با رنگ سبز مشخص شده‌اند؛ برای انتخاب روز کلیک کنید.</div>
+    </div>
 </div>
-
-    <div id="ratingList" class="mb-4 overflow-x-auto"></div>
+   <div id="ratingList" class="mb-4 overflow-x-auto"></div>
 
     <div class="flex flex-col sm:flex-row gap-2 mb-4">
       <button id="saveAllRatings" class="btn btn-success flex-1">
@@ -4468,6 +4475,77 @@ function updateSelectedDateLabel() {
 })(); 
 </script>
 <!-- End Rating feature -->
+
+
+<script>
+// Initialize Persian datepicker for ratingDate and highlight rated dates
+(function(){
+  function getRatedDatesFromGlobalOrLocal() {
+    try {
+      if (typeof ratings !== 'undefined' && Array.isArray(ratings)) {
+        return ratings.map(r => r.date).filter(Boolean);
+      }
+    } catch(e){}
+    try {
+      const rs = JSON.parse(localStorage.getItem('ratings') || '[]');
+      if (Array.isArray(rs)) return rs.map(r => r.date).filter(Boolean);
+    } catch(e){}
+    return [];
+  }
+
+  const ratedDates = getRatedDatesFromGlobalOrLocal();
+
+  // ensure jQuery and persianDatepicker are available
+  if (typeof $ === 'undefined' || typeof $.fn.persianDatepicker === 'undefined') {
+    console.warn('jQuery or persianDatepicker not available yet. Retrying in 200ms...');
+    setTimeout(function(){ /* try again */ initPersianPicker(); }, 200);
+  } else {
+    initPersianPicker();
+  }
+
+  function initPersianPicker(){
+    try{
+      $('#ratingDate').persianDatepicker({
+        format: 'YYYY/MM/DD',
+        autoClose: true,
+        observer: true,
+        toolbox: { calendarSwitch: { enabled: false } },
+        altField: '#ratingDate', // keep the same field
+        checkDate: function(unix){
+          try{
+            const pd = new persianDate(unix);
+            const dateStr = pd.format('YYYY-MM-DD');
+            if (ratedDates.indexOf(dateStr) !== -1) {
+              return { selectable: true, style: 'selected-holiday' };
+            }
+          } catch(e){}
+          return true;
+        },
+        onSelect: function(unix){
+          try{
+            const pd = new persianDate(unix);
+            const greg = pd.toCalendar('gregorian').format('YYYY-MM-DD');
+            document.getElementById('selectedDateLabel').textContent = 'تاریخ انتخاب شده (میلادی): ' + greg;
+            // store the selected gregorian date into a data attribute for later saving if needed
+            document.getElementById('ratingDate').dataset.gregorian = greg;
+          } catch(e){ console.warn(e); }
+        }
+      });
+    } catch(e){
+      console.error('خطا در مقداردهی تقویم شمسی:', e);
+    }
+  }
+})();
+</script>
+<style>
+/* Highlight style used by persian-datepicker via checkDate style property */
+.selected-holiday .datepicker--cell-day {
+  background-color: #fde68a !important;
+  color: #111827 !important;
+  border-radius: 6px;
+}
+/* Also add a small badge when the input has rated date */
+</style>
 
 </body>
 </html>
