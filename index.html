@@ -1669,7 +1669,8 @@ function goToToday() {
         }
 
         // بارگذاری اولیه داده‌ها از فضای ابری
-       async function loadInitialData() {
+// بارگذاری اولیه داده‌ها از فضای ابری
+async function loadInitialData() {
     showLoading();
     try {
         const response = await fetch(API_URL, {
@@ -1692,92 +1693,101 @@ function goToToday() {
                 pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
                 startDate: new persianDate().format('YYYY-MM-DD')
             };
-            if (equipmentList.length > 0 && typeof equipmentList[0] === 'string') {
-    equipmentList = equipmentList.map(item => ({ name: item, cost: null }));
-    saveTasks(); // ذخیره فرمت جدید
-}
+            equipmentList = data.record.equipmentList || [];
             missions = data.record.missions || [];
-            ratings = data.record.ratings || []; // اضافه کردن این خط
-                   renderMissions();   // ✅ نمایش مأموریت‌ها در UI
-
-
-                    
-                    // بارگذاری رمز عبور از دیتابیس (اگر وجود دارد)
-                    if (data.record.appPassword) {
-                        appPassword = data.record.appPassword;
-                        localStorage.setItem('appPassword', appPassword);
-                    }
-                    
-                    // بارگذاری تنظیمات پشتیبان‌گیری
-                    if (data.record.backupSettings) {
-                        backupSettings = data.record.backupSettings;
-                        localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
-                    }
-                    
-                    // ذخیره در localStorage فقط اگر داده‌ای وجود نداشته باشد
-                    if (!localStorage.getItem('tasks')) {
-                        localStorage.setItem('tasks', JSON.stringify(tasks));
-                        localStorage.setItem('notes', JSON.stringify(notes));
-                        localStorage.setItem('holidays', JSON.stringify(holidays));
-                        localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
-                        localStorage.setItem('shifts', JSON.stringify(shifts));
-                        localStorage.setItem('equipment', JSON.stringify(equipmentList));
-                    }
-                    
-                    renderCalendar();
-                    renderTasks();
-                    renderHolidaysList();
-                    renderTeamMembersList();
-                    renderShiftSettings();
-                    updateTaskStats();
-                    setupMultiselect();
-                    renderAssigneeFilter();
-                    renderNote();
-                    renderEquipmentList();
-                    updateBackupUI();
-                    showNotification('داده‌ها با موفقیت بارگذاری شدند');
-                    
-                    // بررسی نیاز به پشتیبان‌گیری خودکار
-                    checkAutoBackup();
-                }
-            } catch (error) {
-                console.error('Error loading initial data:', error);
-                showNotification('خطا در بارگذاری داده‌ها', false, error.message);
-                
-                // اگر خطا در بارگذاری از دیتابیس رخ داد، از localStorage استفاده می‌کنیم
-                tasks = JSON.parse(localStorage.getItem('tasks')) || {};
-                notes = JSON.parse(localStorage.getItem('notes')) || {};
-                holidays = JSON.parse(localStorage.getItem('holidays')) || [];
-                teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
-                shifts = JSON.parse(localStorage.getItem('shifts')) || {
-                    pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
-                    startDate: new persianDate().format('YYYY-MM-DD')
-                };
-                equipmentList = JSON.parse(localStorage.getItem('equipment')) || [];
-                missions = JSON.parse(localStorage.getItem('missions')) || [];
-                backupSettings = JSON.parse(localStorage.getItem('backupSettings')) || {
-                    backupPath: '',
-                    lastBackupDate: null
-                };
-                
-                renderCalendar();
-                renderTasks();
-                renderHolidaysList();
-                renderTeamMembersList();
-                renderShiftSettings();
-                updateTaskStats();
-                setupMultiselect();
-                renderAssigneeFilter();
-                renderNote();
-                renderEquipmentList();
-                updateBackupUI();
-                
-                // بررسی نیاز به پشتیبان‌گیری خودکار
-                checkAutoBackup();
-            } finally {
-                hideLoading();
+            ratings = data.record.ratings || [];
+            
+            // بارگذاری رمز عبور از دیتابیس (اگر وجود دارد)
+            if (data.record.appPassword) {
+                appPassword = data.record.appPassword;
+                localStorage.setItem('appPassword', appPassword);
             }
+            
+            // بارگذاری تنظیمات پشتیبان‌گیری
+            if (data.record.backupSettings) {
+                backupSettings = data.record.backupSettings;
+                localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
+            }
+            
+            // تبدیل فرمت داده‌های قدیمی لوازم (اگر لازم باشد)
+            if (equipmentList.length > 0 && typeof equipmentList[0] === 'string') {
+                equipmentList = equipmentList.map(item => ({ name: item, cost: null }));
+                // ذخیره فرمت جدید در دیتابیس
+                await saveToCloud();
+            }
+            
+            // ذخیره در localStorage فقط اگر داده‌ای وجود نداشته باشد
+            if (!localStorage.getItem('tasks')) {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+                localStorage.setItem('notes', JSON.stringify(notes));
+                localStorage.setItem('holidays', JSON.stringify(holidays));
+                localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+                localStorage.setItem('shifts', JSON.stringify(shifts));
+                localStorage.setItem('equipment', JSON.stringify(equipmentList));
+            }
+            
+            renderCalendar();
+            renderTasks();
+            renderHolidaysList();
+            renderTeamMembersList();
+            renderShiftSettings();
+            updateTaskStats();
+            setupMultiselect();
+            renderAssigneeFilter();
+            renderNote();
+            renderEquipmentList();
+            renderMissions();
+            updateBackupUI();
+            showNotification('داده‌ها با موفقیت بارگذاری شدند');
+            
+            // بررسی نیاز به پشتیبان‌گیری خودکار
+            checkAutoBackup();
         }
+    } catch (error) {
+        console.error('Error loading initial data:', error);
+        showNotification('خطا در بارگذاری داده‌ها', false, error.message);
+        
+        // اگر خطا در بارگذاری از دیتابیس رخ داد، از localStorage استفاده می‌کنیم
+        tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+        notes = JSON.parse(localStorage.getItem('notes')) || {};
+        holidays = JSON.parse(localStorage.getItem('holidays')) || [];
+        teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || ['همکار ۱', 'همکار ۲', 'همکار ۳', 'همکار ۴', 'همکار ۵', 'همکار ۶', 'همکار ۷', 'همکار ۸', 'همکار ۹', 'همکار ۱۰', 'همکار ۱۱', 'همکار ۱۲'];
+        shifts = JSON.parse(localStorage.getItem('shifts')) || {
+            pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
+            startDate: new persianDate().format('YYYY-MM-DD')
+        };
+        equipmentList = JSON.parse(localStorage.getItem('equipment')) || [];
+        missions = JSON.parse(localStorage.getItem('missions')) || [];
+        backupSettings = JSON.parse(localStorage.getItem('backupSettings')) || {
+            backupPath: '',
+            lastBackupDate: null
+        };
+        
+        // تبدیل فرمت داده‌های قدیمی لوازم در localStorage
+        if (equipmentList.length > 0 && typeof equipmentList[0] === 'string') {
+            equipmentList = equipmentList.map(item => ({ name: item, cost: null }));
+            localStorage.setItem('equipment', JSON.stringify(equipmentList));
+        }
+        
+        renderCalendar();
+        renderTasks();
+        renderHolidaysList();
+        renderTeamMembersList();
+        renderShiftSettings();
+        updateTaskStats();
+        setupMultiselect();
+        renderAssigneeFilter();
+        renderNote();
+        renderEquipmentList();
+        renderMissions();
+        updateBackupUI();
+        
+        // بررسی نیاز به پشتیبان‌گیری خودکار
+        checkAutoBackup();
+    } finally {
+        hideLoading();
+    }
+}
 
         // ذخیره داده‌ها در فضای ابری
 async function saveToCloud() {
