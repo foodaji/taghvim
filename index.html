@@ -637,6 +637,26 @@
             background-color: #f3f4f6;
         }
         
+/* استایل برای فیلدهای توضیحات امتیازدهی */
+#ratingList input[type="text"] {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* استایل برای لیست توضیحات در جدول */
+#ratingsStats ul {
+    list-style-type: disc;
+    padding-right: 1.5rem;
+    margin: 0;
+}
+
+#ratingsStats li {
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+
         /* Assignee Modal */
         #assigneeModal .modal-content {
             max-width: 300px;
@@ -1164,6 +1184,8 @@
     <div id="equipmentContent" class="mt-2 hidden">
         <div class="mb-4">
             <input id="equipmentInput" type="text" placeholder="نام لوازم..." class="w-full p-2 border rounded mb-2">
+            <!-- اضافه کردن فیلد برآورد ریالی -->
+            <input id="equipmentCostInput" type="number" placeholder="برآورد ریالی (ریال) - اختیاری" class="w-full p-2 border rounded mb-2" min="0">
             <button id="addEquipment" class="btn btn-success w-full">
                 <i class="fas fa-plus mr-1"></i> افزودن
             </button>
@@ -1343,21 +1365,23 @@
         </div>
     </div>
 
-    <!-- Edit Equipment Modal -->
-    <div id="editEquipmentModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 class="text-lg font-bold mb-2">ویرایش لوازم</h3>
-            <input id="editEquipmentInput" type="text" class="w-full p-2 border rounded mb-2" placeholder="نام لوازم...">
-            <div class="flex gap-2 mt-4">
-                <button id="saveEditEquipment" class="btn btn-success flex-1">
-                    <i class="fas fa-save mr-1"></i> ذخیره
-                </button>
-                <button id="cancelEditEquipment" class="btn btn-danger flex-1">
-                    <i class="fas fa-times mr-1"></i> انصراف
-                </button>
-            </div>
+<!-- Edit Equipment Modal -->
+<div id="editEquipmentModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 class="text-lg font-bold mb-2">ویرایش لوازم</h3>
+        <input id="editEquipmentInput" type="text" class="w-full p-2 border rounded mb-2" placeholder="نام لوازم...">
+        <!-- اضافه کردن فیلد مبلغ در مودال ویرایش -->
+        <input id="editEquipmentCostInput" type="number" class="w-full p-2 border rounded mb-2" placeholder="برآورد ریالی (ریال) - اختیاری" min="0">
+        <div class="flex gap-2 mt-4">
+            <button id="saveEditEquipment" class="btn btn-success flex-1">
+                <i class="fas fa-save mr-1"></i> ذخیره
+            </button>
+            <button id="cancelEditEquipment" class="btn btn-danger flex-1">
+                <i class="fas fa-times mr-1"></i> انصراف
+            </button>
         </div>
     </div>
+</div>
 
     <!-- Holidays Picker Modal -->
     <div id="holidaysPickerModal" class="modal-overlay">
@@ -1668,7 +1692,10 @@ function goToToday() {
                 pattern: ['همکار ۱', 'همکار ۲', 'همکار ۳'],
                 startDate: new persianDate().format('YYYY-MM-DD')
             };
-            equipmentList = data.record.equipmentList || [];
+            if (equipmentList.length > 0 && typeof equipmentList[0] === 'string') {
+    equipmentList = equipmentList.map(item => ({ name: item, cost: null }));
+    saveTasks(); // ذخیره فرمت جدید
+}
             missions = data.record.missions || [];
             ratings = data.record.ratings || []; // اضافه کردن این خط
                    renderMissions();   // ✅ نمایش مأموریت‌ها در UI
@@ -3249,80 +3276,106 @@ function saveShifts() {
         }
 
         // بخش مدیریت لوازم مورد نیاز
-        function renderEquipmentList() {
-            const equipmentListElement = document.getElementById('equipmentList');
-            equipmentListElement.innerHTML = '';
-            
-            equipmentList.forEach((equipment, index) => {
-                const equipmentItem = document.createElement('div');
-                equipmentItem.className = 'equipment-item';
-                
-                equipmentItem.innerHTML = `
-                    <div class="w-full p-2 rounded">
-                        <div class="flex items-center">
-                            <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.equipment-actions').classList.toggle('show-actions')">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </div>
-                            <div class="equipment-actions">
-                                <button onclick="openEditEquipmentDialog(${index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="markEquipmentAsPurchased(${index})" class="btn btn-icon btn-sm btn-success" title="خرید شد">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </div>
-                            <span class="task-text">${equipment}</span>
+// تابع نمایش لیست لوازم
+function renderEquipmentList() {
+    const equipmentListElement = document.getElementById('equipmentList');
+    equipmentListElement.innerHTML = '';
+    
+    equipmentList.forEach((equipment, index) => {
+        const equipmentItem = document.createElement('div');
+        equipmentItem.className = 'equipment-item';
+        
+        // نمایش مبلغ اگر وجود داشته باشد
+        const costDisplay = equipment.cost ? 
+            `<span class="text-green-600 ml-2">${equipment.cost.toLocaleString('fa-IR')} ریال</span>` : 
+            '<span class="text-gray-500 ml-2">هزینه وارد نشده</span>';
+        
+        equipmentItem.innerHTML = `
+            <div class="w-full p-2 rounded">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="action-toggle" onclick="event.stopPropagation(); this.parentElement.parentElement.querySelector('.equipment-actions').classList.toggle('show-actions')">
+                            <i class="fas fa-ellipsis-v"></i>
                         </div>
+                        <div class="equipment-actions">
+                            <button onclick="openEditEquipmentDialog(${index})" class="btn btn-icon btn-sm btn-primary" title="ویرایش">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="markEquipmentAsPurchased(${index})" class="btn btn-icon btn-sm btn-success" title="خرید شد">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                        <span class="task-text">${equipment.name}</span>
+                        ${costDisplay}
                     </div>
-                `;
-                
-                equipmentListElement.appendChild(equipmentItem);
-            });
-        }
+                </div>
+            </div>
+        `;
+        
+        equipmentListElement.appendChild(equipmentItem);
+    });
+}
 
-        function addEquipment() {
-            const equipmentInput = document.getElementById('equipmentInput');
-            const equipmentName = equipmentInput.value.trim();
-            
-            if (!equipmentName) {
-                showNotification('لطفاً نام لوازم را وارد کنید', false);
-                return;
-            }
-            
-            equipmentList.push(equipmentName);
-            saveTasks();
-            renderEquipmentList();
-            equipmentInput.value = '';
-            showNotification('لوازم با موفقیت اضافه شد');
-        }
+function addEquipment() {
+    const equipmentInput = document.getElementById('equipmentInput');
+    const equipmentCostInput = document.getElementById('equipmentCostInput');
+    const equipmentName = equipmentInput.value.trim();
+    const equipmentCost = equipmentCostInput.value.trim() ? parseInt(equipmentCostInput.value.trim()) : null;
+    
+    if (!equipmentName) {
+        showNotification('لطفاً نام لوازم را وارد کنید', false);
+        return;
+    }
+    
+    // ایجاد شیء لوازم جدید با مبلغ
+    const newEquipment = {
+        name: equipmentName,
+        cost: equipmentCost
+    };
+    
+    equipmentList.push(newEquipment);
+    saveTasks();
+    renderEquipmentList();
+    equipmentInput.value = '';
+    equipmentCostInput.value = '';
+    showNotification('لوازم با موفقیت اضافه شد');
+}
 
-        function openEditEquipmentDialog(index) {
-            editEquipmentIndex = index;
-            document.getElementById('editEquipmentInput').value = equipmentList[index];
-            document.getElementById('editEquipmentModal').style.display = 'flex';
-        }
+// تابع باز کردن مودال ویرایش لوازم
+function openEditEquipmentDialog(index) {
+    editEquipmentIndex = index;
+    const equipment = equipmentList[index];
+    document.getElementById('editEquipmentInput').value = equipment.name;
+    document.getElementById('editEquipmentCostInput').value = equipment.cost || '';
+    document.getElementById('editEquipmentModal').style.display = 'flex';
+}
 
-        function saveEditEquipment() {
-            const newName = document.getElementById('editEquipmentInput').value.trim();
-            
-            if (!newName) {
-                showNotification('لطفاً نام لوازم را وارد کنید', false);
-                return;
-            }
-            
-            if (editEquipmentIndex >= 0 && editEquipmentIndex < equipmentList.length) {
-                equipmentList[editEquipmentIndex] = newName;
-                saveTasks();
-                renderEquipmentList();
-                closeEditEquipmentDialog();
-                showNotification('لوازم با موفقیت ویرایش شد');
-            }
-        }
+// تابع ذخیره ویرایش لوازم
+function saveEditEquipment() {
+    const newName = document.getElementById('editEquipmentInput').value.trim();
+    const newCost = document.getElementById('editEquipmentCostInput').value.trim() ? 
+        parseInt(document.getElementById('editEquipmentCostInput').value.trim()) : null;
+    
+    if (!newName) {
+        showNotification('لطفاً نام لوازم را وارد کنید', false);
+        return;
+    }
+    
+    if (editEquipmentIndex >= 0 && editEquipmentIndex < equipmentList.length) {
+        equipmentList[editEquipmentIndex].name = newName;
+        equipmentList[editEquipmentIndex].cost = newCost;
+        saveTasks();
+        renderEquipmentList();
+        closeEditEquipmentDialog();
+        showNotification('لوازم با موفقیت ویرایش شد');
+    }
+}
 
-        function closeEditEquipmentDialog() {
-            document.getElementById('editEquipmentModal').style.display = 'none';
-            editEquipmentIndex = -1;
-        }
+// تابع بستن مودال ویرایش لوازم
+function closeEditEquipmentDialog() {
+    document.getElementById('editEquipmentModal').style.display = 'none';
+    editEquipmentIndex = -1;
+}
 
         function markEquipmentAsPurchased(index) {
             if (confirm('آیا این لوازم خریداری شده است؟')) {
@@ -4108,7 +4161,7 @@ renderMissions();
   }
 
   // رندر فرم امتیازدهی (فیلدهای عددی برای هر همکار)
-  async function renderRatingList() {
+async function renderRatingList() {
     const record = await getBinRecord();
     const members = record.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
     const ratings = record.ratings || [];
@@ -4120,103 +4173,118 @@ renderMissions();
     const dateInput = document.getElementById('ratingDate');
     const selectedDateISO = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0,10);
 
-members.forEach((member, idx) => {
-  const memberName = (typeof member === 'object') ? (member.name || member) : member;
-  const row = document.createElement('div');
-  row.className = 'flex items-center justify-between border p-2 mb-2 rounded';
-  const existing = ratings.find(r=> r.member === memberName && r.date === selectedDateISO);
-  
-  // اگر امتیازی وجود ندارد یا امتیاز 0 است، فیلد را خالی بگذار
-  const val = existing && existing.score !== 0 ? existing.score.toString() : '';
-  
-  row.innerHTML = '<span style="flex:1">' + memberName + '</span><input type="number" id="rating_score_' + idx + '" data-member-index="' + idx + '" data-member-name="' + memberName + '" class="border p-1 w-20 ml-2" min="-50" max="50" step="1" value="' + val + '">';
-  list.appendChild(row);
-});
-  } // بستن تابع renderRatingList
+    members.forEach((member, idx) => {
+        const memberName = (typeof member === 'object') ? (member.name || member) : member;
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between border p-2 mb-2 rounded';
+        
+        const existing = ratings.find(r => r.member === memberName && r.date === selectedDateISO);
+        
+        // اگر امتیازی وجود ندارد یا امتیاز 0 است، فیلد را خالی بگذار
+        const val = existing && existing.score !== 0 ? existing.score.toString() : '';
+        const descVal = existing && existing.description ? existing.description : '';
+        
+        row.innerHTML = `
+            <span style="flex:1">${memberName}</span>
+            <input type="number" id="rating_score_${idx}" data-member-index="${idx}" 
+                data-member-name="${memberName}" class="border p-1 w-20 ml-2" 
+                min="-50" max="50" step="1" value="${val}" placeholder="امتیاز">
+            <input type="text" id="rating_desc_${idx}" data-member-index="${idx}" 
+                data-member-name="${memberName}" class="border p-1 w-40 ml-2" 
+                value="${descVal}" placeholder="توضیح (اختیاری)">
+        `;
+        list.appendChild(row);
+    });
+}
 
   // ثبت یک‌جای تمام امتیازهای فرم برای تاریخ انتخاب‌شده
 // در تابع saveAllRatings، این تغییرات را اعمال کنید:
+// در تابع saveAllRatings، تغییرات زیر را اعمال کنید:
 async function saveAllRatings() {
-  const date = document.getElementById('ratingDate').value;
-  if (!date) { 
-    alert('لطفاً تاریخ را انتخاب کنید'); 
-    return; 
-  }
+    const date = document.getElementById('ratingDate').value;
+    if (!date) { 
+        alert('لطفاً تاریخ را انتخاب کنید'); 
+        return; 
+    }
 
-  // دریافت رکورد از سرور
-  const rec = await getBinRecord();
-  const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
-  
-  // تعریف isoDate در اینجا، قبل از استفاده در حلقه
-  const isoDate = new Date(date).toISOString().slice(0,10);
-  
-  // بررسی اعتبار مقادیر
-  let isValid = true;
-  
-  members.forEach((member, idx) => {
-    const input = document.querySelector('#rating_score_' + idx);
-    if (input) {
-      const value = input.value.trim();
-      
-      // اگر فیلد خالی است، آن را معتبر در نظر بگیر
-      if (value === '') {
-        input.style.borderColor = '';
+    const rec = await getBinRecord();
+    const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
+    const isoDate = new Date(date).toISOString().slice(0,10);
+    
+    // بررسی اعتبار مقادیر
+    let isValid = true;
+    
+    members.forEach((member, idx) => {
+        const input = document.querySelector('#rating_score_' + idx);
+        if (input) {
+            const value = input.value.trim();
+            
+            if (value === '') {
+                input.style.borderColor = '';
+                return;
+            }
+            
+            const score = parseInt(value, 10);
+            
+            if (isNaN(score) || score < -50 || score > 50) {
+                isValid = false;
+                input.style.borderColor = 'red';
+            } else {
+                input.style.borderColor = '';
+            }
+        }
+    });
+
+    if (!isValid) {
+        alert('لطفاً مقادیر بین -50 تا 50 وارد کنید');
         return;
-      }
-      
-      const score = parseInt(value, 10);
-      
-      // فقط اگر عدد وارد شده خارج از محدوده باشد، خطا نشان بده
-      if (isNaN(score) || score < -50 || score > 50) {
-        isValid = false;
-        input.style.borderColor = 'red';
-      } else {
-        input.style.borderColor = '';
-      }
     }
-  });
 
-  if (!isValid) {
-    alert('لطفاً مقادیر بین -50 تا 50 وارد کنید');
-    return;
-  }
+    // حلقه ذخیره‌سازی با پشتیبانی از توضیحات
+    members.forEach((member, idx) => {
+        const memberName = (typeof member === 'object') ? (member.name || member) : member;
+        const input = document.querySelector('#rating_score_' + idx);
+        const descriptionInput = document.querySelector('#rating_desc_' + idx);
+        
+        if (!input) return;
+        
+        const value = input.value.trim();
+        const description = descriptionInput ? descriptionInput.value.trim() : '';
+        
+        // اگر فیلد خالی است، از ذخیره‌سازی صرف نظر کن و رکورد موجود را حذف کن
+        if (value === '') {
+            const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
+            if (exIndex >= 0) {
+                rec.ratings.splice(exIndex, 1);
+            }
+            return;
+        }
+        
+        const score = parseInt(value,10);
+        const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
+        
+        if (exIndex >= 0) {
+            rec.ratings[exIndex].score = score;
+            rec.ratings[exIndex].description = description;
+        } else {
+            rec.ratings.push({ 
+                member: memberName, 
+                date: isoDate, 
+                score, 
+                description 
+            });
+        }
+    });
 
-  // حالا حلقه ذخیره‌سازی - isoDate در این scope در دسترس است
-  members.forEach((member, idx) => {
-    const memberName = (typeof member === 'object') ? (member.name || member) : member;
-    const input = document.querySelector('#rating_score_' + idx);
-    if (!input) return;
-    
-    const value = input.value.trim();
-    
-    // اگر فیلد خالی است، از ذخیره‌سازی صرف نظر کن و رکورد موجود را حذف کن
-    if (value === '') {
-      const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
-      if (exIndex >= 0) {
-        rec.ratings.splice(exIndex, 1);
-      }
-      return;
-    }
-    
-    const score = parseInt(value,10);
-    const exIndex = rec.ratings.findIndex(r => r.member === memberName && r.date === isoDate);
-    
-    if (exIndex >= 0) {
-      rec.ratings[exIndex].score = score;
-    } else {
-      rec.ratings.push({ member: memberName, date: isoDate, score });
-    }
-  });
-
-  await putBinRecord(rec);
-  ratings = rec.ratings;
-  showNotification('تمام امتیازها ثبت شدند');
-  renderRatingList();
-  renderMonthlyAverages();
+    await putBinRecord(rec);
+    ratings = rec.ratings;
+    showNotification('تمام امتیازها و توضیحات ثبت شدند');
+    renderRatingList();
+    renderMonthlyAverages();
 }
 
-  // نمایش آمار ماهانه و نمودار (برای ماه فعلی ratingPD)
-  async function renderMonthlyAverages() {
+// تابع نمایش آمار ماهانه و نمودار
+async function renderMonthlyAverages() {
     const rec = await getBinRecord();
     const ratings = rec.ratings || [];
     const members = rec.teamMembers || (typeof teamMembers !== 'undefined' ? teamMembers : []);
@@ -4231,33 +4299,54 @@ async function saveAllRatings() {
 
     const averagesMap = {};
     const countMap = {};
+    const totalScoresMap = {};
+    const descriptionsMap = {}; // اضافه کردن برای ذخیره توضیحات
     
     members.forEach(m => {
       const name = (typeof m === 'object') ? (m.name || m) : m;
       averagesMap[name] = [];
       countMap[name] = 0;
+      totalScoresMap[name] = 0;
+      descriptionsMap[name] = []; // مقداردهی اولیه
     });
     
     filtered.forEach(r => {
       if (!averagesMap[r.member]) {
         averagesMap[r.member] = [];
         countMap[r.member] = 0;
+        totalScoresMap[r.member] = 0;
+        descriptionsMap[r.member] = [];
       }
       averagesMap[r.member].push(r.score);
       countMap[r.member]++;
+      totalScoresMap[r.member] += r.score;
+      
+      // ذخیره توضیحات اگر وجود داشته باشد
+      if (r.description) {
+        descriptionsMap[r.member].push(r.description);
+      }
     });
 
-    // ایجاد متغیرهای labels و data برای نمودار
+    // ایجاد متغیرهای labels و data برای نمودار (بر اساس مجموع امتیازات)
     const labels = [];
     const data = [];
-    Object.keys(averagesMap).forEach(member => {
+    const backgroundColors = [];
+    
+    // مرتب سازی بر اساس مجموع امتیازات (نزولی)
+    const sortedMembers = Object.keys(totalScoresMap).sort((a, b) => {
+        return totalScoresMap[b] - totalScoresMap[a];
+    });
+
+    sortedMembers.forEach(member => {
       labels.push(member);
-      const scores = averagesMap[member] || [];
-      if (scores.length > 0) {
-        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-        data.push(Math.round(avg * 100) / 100);
+      const total = totalScoresMap[member] || 0;
+      data.push(total);
+      
+      // تعیین رنگ بر اساس مثبت یا منفی بودن امتیاز
+      if (total >= 0) {
+        backgroundColors.push('#3b82f6'); // آبی برای امتیازات مثبت
       } else {
-        data.push(0);
+        backgroundColors.push('#ef4444'); // قرمز برای امتیازات منفی
       }
     });
 
@@ -4278,53 +4367,65 @@ async function saveAllRatings() {
     const table = document.createElement('table');
     table.className = 'w-full border-collapse border border-gray-300 bg-white text-sm';
 
-    // ایجاد هدر جدول
+    // ایجاد هدر جدول با ستون جدید برای توضیحات
     const thead = document.createElement('thead');
-    thead.innerHTML = '<tr class="bg-gray-100"><th class="border border-gray-300 p-2 text-center">ردیف</th><th class="border border-gray-300 p-2 text-center">نام همکار</th><th class="border border-gray-300 p-2 text-center">میانگین امتیاز</th><th class="border border-gray-300 p-2 text-center">تعداد امتیازات</th></tr>';
+    thead.innerHTML = `
+        <tr class="bg-gray-100">
+            <th class="border border-gray-300 p-2 text-center">ردیف</th>
+            <th class="border border-gray-300 p-2 text-center">نام همکار</th>
+            <th class="border border-gray-300 p-2 text-center">میانگین امتیاز</th>
+            <th class="border border-gray-300 p-2 text-center">جمع امتیازات</th>
+            <th class="border border-gray-300 p-2 text-center">تعداد امتیازات</th>
+            <th class="border border-gray-300 p-2 text-center">توضیحات</th>
+        </tr>
+    `;
     table.appendChild(thead);
 
     // ایجاد بدنه جدول
     const tbody = document.createElement('tbody');
     
-    // مرتب سازی بر اساس میانگین امتیاز (نزولی)
-    const sortedMembers = Object.keys(averagesMap).sort((a, b) => {
-        const avgA = averagesMap[a].length > 0 ? 
-            averagesMap[a].reduce((sum, score) => sum + score, 0) / averagesMap[a].length : 0;
-        const avgB = averagesMap[b].length > 0 ? 
-            averagesMap[b].reduce((sum, score) => sum + score, 0) / averagesMap[b].length : 0;
-        return avgB - avgA;
-    });
-
     // پر کردن ردیف‌های جدول
     sortedMembers.forEach((member, index) => {
         const scores = averagesMap[member] || [];
         const count = countMap[member] || 0;
+        const total = totalScoresMap[member] || 0;
         const avg = scores.length > 0 ? 
             (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(2) : '0.00';
+        
+        // ایجاد لیست توضیحات
+        const descriptions = descriptionsMap[member] || [];
+        const descriptionsHtml = descriptions.length > 0 ? 
+            `<ul class="text-right text-xs">${descriptions.map(desc => `<li>${desc}</li>`).join('')}</ul>` : 
+            '---';
 
         const row = document.createElement('tr');
         row.className = index % 2 === 0 ? 'bg-gray-50' : 'bg-white';
-        row.innerHTML = '<td class="border border-gray-300 p-2 text-center">' + (index + 1) + '</td><td class="border border-gray-300 p-2 text-center">' + member + '</td><td class="border border-gray-300 p-2 text-center">' + avg + '</td><td class="border border-gray-300 p-2 text-center">' + count + '</td>';
+        row.innerHTML = `
+            <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
+            <td class="border border-gray-300 p-2 text-center">${member}</td>
+            <td class="border border-gray-300 p-2 text-center">${avg}</td>
+            <td class="border border-gray-300 p-2 text-center">${total}</td>
+            <td class="border border-gray-300 p-2 text-center">${count}</td>
+            <td class="border border-gray-300 p-2 text-center">${descriptionsHtml}</td>
+        `;
         tbody.appendChild(row);
     });
 
     table.appendChild(tbody);
     statsEl.appendChild(table);
 
-    // نمایش بهترین همکار ماه
+    // نمایش بهترین همکار ماه بر اساس مجموع امتیازات
     if (sortedMembers.length > 0) {
         const bestMember = sortedMembers[0];
-        const bestScore = averagesMap[bestMember].length > 0 ? 
-            (averagesMap[bestMember].reduce((sum, score) => sum + score, 0) / 
-             averagesMap[bestMember].length).toFixed(2) : '0.00';
+        const bestScore = totalScoresMap[bestMember];
         
         const bestMemberEl = document.createElement('div');
         bestMemberEl.className = 'mt-4 p-3 bg-green-100 border border-green-300 rounded text-center';
-        bestMemberEl.innerHTML = '<strong>بهترین همکار ماه:</strong> ' + bestMember + ' با میانگین امتیاز ' + bestScore;
+        bestMemberEl.innerHTML = '<strong>بهترین همکار ماه (بر اساس مجموع امتیازات):</strong> ' + bestMember + ' با مجموع امتیاز ' + bestScore;
         statsEl.appendChild(bestMemberEl);
     }
 
-    // رسم نمودار
+    // رسم نمودار بر اساس مجموع امتیازات
     const canvas = document.getElementById('ratingChart');
     if (!canvas) return;
     canvas.classList.remove('hidden');
@@ -4332,13 +4433,33 @@ async function saveAllRatings() {
     if (ratingChartInstance) {
       try { ratingChartInstance.destroy(); } catch(e) { console.warn(e); }
     }
+    
+    // تعیین محدوده محور Y
+    const minValue = Math.min(...data);
+    const maxValue = Math.max(...data);
+    
     ratingChartInstance = new Chart(ctx, {
       type: 'bar',
-      data: { labels, datasets: [{ label: 'میانگین امتیاز', data, backgroundColor: '#3b82f6' }] },
-      options: { responsive: true, scales: { y: { beginAtZero: true, suggestedMin: -50, suggestedMax: 50 } } }
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'مجموع امتیازات',
+          data: data,
+          backgroundColor: backgroundColors
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            suggestedMin: minValue < 0 ? minValue - 5 : 0,
+            suggestedMax: maxValue > 0 ? maxValue + 5 : 10
+          }
+        }
+      }
     });
-  }
-
+}
 
 // اضافه کردن توابع مدیریت دکمه‌های روز قبل و بعد
 function goToPrevRatingDay() {
