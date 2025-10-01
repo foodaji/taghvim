@@ -7,7 +7,8 @@
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/x-icon" href="favicon2.ico">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
@@ -417,10 +418,16 @@
             margin-right: 0.5rem;
         }
         .task-description {
-            color: var(--danger);
-            font-size: 0.8rem;
+            background-color: rgba(255,255,255,0.95);
+            color: #111827;
+            font-size: 0.85rem;
             margin-top: 0.25rem;
-            padding-right: 2rem;
+            padding: 0.35rem 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.03) inset;
+            margin-right: 0.25rem;
+            white-space: pre-wrap;
         }
         .description-input {
             width: 100%;
@@ -4384,7 +4391,6 @@ async function renderMonthlyAverages() {
         <tr class="bg-gray-100">
             <th class="border border-gray-300 p-2 text-center">ردیف</th>
             <th class="border border-gray-300 p-2 text-center">نام همکار</th>
-            <th class="border border-gray-300 p-2 text-center">میانگین امتیاز</th>
             <th class="border border-gray-300 p-2 text-center">جمع امتیازات</th>
             <th class="border border-gray-300 p-2 text-center">تعداد امتیازات</th>
             <th class="border border-gray-300 p-2 text-center">توضیحات</th>
@@ -4414,8 +4420,7 @@ async function renderMonthlyAverages() {
         row.innerHTML = `
             <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
             <td class="border border-gray-300 p-2 text-center">${member}</td>
-            <td class="border border-gray-300 p-2 text-center">${avg}</td>
-            <td class="border border-gray-300 p-2 text-center">${total}</td>
+<td class="border border-gray-300 p-2 text-center">${total}</td>
             <td class="border border-gray-300 p-2 text-center">${count}</td>
             <td class="border border-gray-300 p-2 text-center">${descriptionsHtml}</td>
         `;
@@ -4679,5 +4684,85 @@ function updateSelectedDateLabel() {
 /* Also add a small badge when the input has rated date */
 </style>
 
+
+<!-- Rating Password Modal -->
+<div id="ratingPasswordModal" style="display:none; position:fixed; z-index:10000; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+  <div style="background:white; padding:1.5rem; border-radius:0.5rem; width:90%; max-width:400px;">
+    <h3 class="text-lg font-bold mb-2">رمز عبور برای نمایش SCORE</h3>
+    <input type="password" id="ratingPasswordInput" class="password-input" placeholder="رمز عبور">
+    <div id="ratingPasswordError" class="text-red-500 text-sm mt-2 hidden">رمز عبور اشتباه است</div>
+    <div class="flex gap-2 mt-4">
+      <button id="ratingPasswordOk" class="btn btn-primary flex-1">تایید</button>
+      <button id="ratingPasswordCancel" class="btn btn-danger flex-1">لغو</button>
+    </div>
+  </div>
+</div>
+<script>
+// Toggle نمایش/مخفی یادداشت روز با کلیک روی عنوان
+(function(){
+    const noteHeader = document.querySelector('.note-container h3');
+    const noteContent = document.getElementById('noteContent');
+    if (noteHeader && noteContent) {
+        noteContent.classList.add('hidden'); // کل محتوا (شامل فیلد و دکمه و متن) مخفی
+        noteHeader.style.cursor = 'pointer';
+        noteHeader.title = 'برای نمایش/مخفی کردن یادداشت کلیک کنید';
+        noteHeader.addEventListener('click', (e) => {
+            noteContent.classList.toggle('hidden');
+        });
+    }
+})();
+
+
+// Require password before opening ratingSection (SCORE)
+(function(){
+    const scoreBtn = document.getElementById('ratingToggle');
+    const ratingModal = document.getElementById('ratingPasswordModal');
+    const okBtn = document.getElementById('ratingPasswordOk');
+    const cancelBtn = document.getElementById('ratingPasswordCancel');
+    const input = document.getElementById('ratingPasswordInput');
+    const err = document.getElementById('ratingPasswordError');
+    const ratingSection = document.getElementById('ratingSection');
+
+    if (!scoreBtn || !ratingModal || !ratingSection) return;
+
+    // همیشه در شروع ratingSection مخفی باشد
+    ratingSection.classList.add('hidden');
+
+    scoreBtn.addEventListener('click', (e) => {
+        err.classList.add('hidden');
+        input.value = '';
+        ratingModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // جلوگیری از اسکرول
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        ratingModal.style.display = 'none';
+        document.body.style.overflow = ''; // بازگرداندن اسکرول
+    });
+
+    okBtn.addEventListener('click', () => {
+        const val = input.value;
+        if (val === appPassword) {
+            ratingModal.style.display = 'none';
+            document.body.style.overflow = ''; 
+            ratingSection.classList.remove('hidden');
+        } else {
+            err.classList.remove('hidden');
+            err.textContent = 'رمز عبور اشتباه است';
+        }
+    });
+
+    input.addEventListener('keypress', (ev) => {
+        if (ev.key === 'Enter') okBtn.click();
+    });
+
+    const closeRating = document.getElementById('closeRatingSection');
+    if (closeRating) {
+        closeRating.addEventListener('click', () => {
+            ratingSection.classList.add('hidden');
+        });
+    }
+})();
+</script>
 </body>
 </html>
