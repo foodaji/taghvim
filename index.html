@@ -1081,6 +1081,10 @@
         <i class="fas fa-star ml-1"></i>
         <span>مرتب‌سازی بر اساس اهمیت</span>
     </button>
+    <button id="toggleCompletedTasks" class="btn btn-secondary btn-sm whitespace-nowrap min-w-[180px]">
+        <i class="fas fa-eye-slash ml-1"></i>
+        <span>نمایش کارهای انجام شده</span>
+    </button>
 </div>
 
 
@@ -1580,6 +1584,8 @@
 
         // رمز عبور پیش‌فرض
         let appPassword = localStorage.getItem('appPassword') || "1234";
+
+let showCompletedTasks = false; // وضعیت نمایش کارهای انجام شده
         
         // متغیرهای داده‌ها
         let tasks = {};
@@ -1956,8 +1962,25 @@ function renderTasks() {
     taskList.innerHTML = '';
     
     if (tasks[selectedDateStr] && Array.isArray(tasks[selectedDateStr])) {
+        // فیلتر کردن کارها بر اساس وضعیت نمایش کارهای انجام شده
+        let tasksToShow = [...tasks[selectedDateStr]];
+        
+        // اگر نمایش کارهای انجام شده غیرفعال است، آنها را فیلتر کن
+        if (!showCompletedTasks) {
+            tasksToShow = tasksToShow.filter(task => !task.completed);
+        }
+        
+        // اگر هیچ کاری برای نمایش نیست، پیام مناسب نشان بده
+        if (tasksToShow.length === 0) {
+            const message = showCompletedTasks ? 
+                'هیچ کاری برای این روز ثبت نشده است' : 
+                'هیچ کار انجام نشده‌ای برای این روز وجود ندارد';
+            taskList.innerHTML = `<div class="text-center text-gray-500 py-4">${message}</div>`;
+            return;
+        }
+
         // مرتب‌سازی کارها
-        const sortedTasks = [...tasks[selectedDateStr]].sort((a, b) => {
+        const sortedTasks = [...tasksToShow].sort((a, b) => {
             // اولویت با کارهای انجام نشده
             if (a.completed && !b.completed) return 1;
             if (!a.completed && b.completed) return -1;
@@ -2025,12 +2048,35 @@ function renderTasks() {
             });
         }
     } else {
-        taskList.innerHTML = '<div class="text-center text-gray-500 py-4">هیچ کاری برای این روز ثبت نشده است</div>';
+        const message = showCompletedTasks ? 
+            'هیچ کاری برای این روز ثبت نشده است' : 
+            'هیچ کار انجام نشده‌ای برای این روز وجود ندارد';
+        taskList.innerHTML = `<div class="text-center text-gray-500 py-4">${message}</div>`;
     }
     
     renderIncompleteTasks();
     renderAssigneeTasks();
     updateTaskStats();
+}
+
+function toggleCompletedTasks() {
+    showCompletedTasks = !showCompletedTasks;
+    
+    // به‌روزرسانی متن و آیکون دکمه
+    const button = document.getElementById('toggleCompletedTasks');
+    const icon = button.querySelector('i');
+    const span = button.querySelector('span');
+    
+    if (showCompletedTasks) {
+        icon.className = 'fas fa-eye ml-1';
+        span.textContent = 'مخفی کردن کارهای انجام شده';
+    } else {
+        icon.className = 'fas fa-eye-slash ml-1';
+        span.textContent = 'نمایش کارهای انجام شده';
+    }
+    
+    // رندر مجدد لیست کارها
+    renderTasks();
 }
 
 // تابع جداگانه برای رندر هر آیتم کار
@@ -3769,6 +3815,7 @@ function closeEditEquipmentDialog() {
         document.getElementById('openBackupModal').addEventListener('click', openBackupModal);
         document.getElementById('restoreBackup').addEventListener('click', restoreFromExcel);
         document.getElementById('cancelBackup').addEventListener('click', closeBackupModal);
+        document.getElementById('toggleCompletedTasks').addEventListener('click', toggleCompletedTasks);
         
         // اضافه کردن رویداد Enter برای ورود
         document.getElementById('passwordInput').addEventListener('keypress', (e) => {
