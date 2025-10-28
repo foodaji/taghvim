@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه مدیریت امانت تجهیزات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-down {
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .returned-row {
+            background-color: #f0f9ff;
+            opacity: 0.7;
+        }
+        
+        .overdue-notification {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-full">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-full flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <div class="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">سامانه مدیریت امانت</h1>
+                <p class="text-gray-600">لطفاً کد کاربری خود را وارد کنید</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="userCode" class="block text-sm font-medium text-gray-700 mb-2">کد کاربری</label>
+                    <input type="text" id="userCode" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="کد 4 رقمی خود را وارد کنید">
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200 font-medium">
+                    ورود به سامانه
+                </button>
+            </form>
+            
+            <div id="loginError" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden min-h-full">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <div class="bg-blue-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-800">سامانه مدیریت امانت تجهیزات</h1>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <span class="text-sm text-gray-600">خوش آمدید، <span id="currentUserName" class="font-medium text-blue-600"></span></span>
+                        <button id="adminPanelBtn" class="hidden bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                            پنل مدیریت
+                        </button>
+                        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                            خروج
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Overdue Notifications -->
+        <div id="overdueNotifications" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4"></div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Add Equipment Form -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8 fade-in">
+                <h2 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    ثبت امانت جدید
+                </h2>
+                
+                <form id="equipmentForm" class="grid grid-cols-1 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="mainFormFields">
+                        <div>
+                            <label for="equipmentName" class="block text-sm font-medium text-gray-700 mb-2">نام تجهیز</label>
+                            <input type="text" id="equipmentName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="مثال: لپ‌تاپ، پروژکتور، ...">
+                        </div>
+                        
+                        <div>
+                            <label for="borrowerName" class="block text-sm font-medium text-gray-700 mb-2">نام گیرنده</label>
+                            <input type="text" id="borrowerName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="نام همکار">
+                        </div>
+                        
+                        <div class="flex items-end">
+                            <button type="submit" 
+                                    class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200 font-medium">
+                                ثبت امانت
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="lenderField" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div class="md:col-span-3">
+                                <label for="lenderName" class="block text-sm font-medium text-gray-700 mb-2">امانت دهنده (اختیاری)</label>
+                                <div class="relative">
+                                    <input type="text" id="lenderName" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                           placeholder="نام امانت دهنده را تایپ کنید... (خالی بگذارید تا نام شما ثبت شود)">
+                                    <div id="lenderSuggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-40 overflow-y-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Equipment List -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+                <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                        <div class="bg-blue-600 p-2 rounded-lg ml-3">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        لیست تجهیزات امانتی
+                    </h2>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                            <tr>
+                                <th class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b-2 border-gray-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                        </svg>
+                                        نام تجهیز
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b-2 border-gray-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 ml-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                        گیرنده
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b-2 border-gray-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 ml-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        تاریخ امانت
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b-2 border-gray-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 ml-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        امانت دهنده
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b-2 border-gray-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 ml-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        وضعیت
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b-2 border-gray-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 ml-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                                        </svg>
+                                        عملیات
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipmentTableBody" class="bg-white divide-y divide-gray-100">
+                            <!-- Equipment rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="emptyState" class="text-center py-16 bg-gradient-to-b from-gray-50 to-white">
+                    <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">هنوز تجهیزی ثبت نشده است</h3>
+                    <p class="text-gray-500">برای شروع، تجهیز جدیدی را از فرم بالا ثبت کنید</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-full overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">پنل مدیریت</h2>
+                    <button id="closeAdminModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Add User Form -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">افزودن کاربر جدید</h3>
+                    <form id="addUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label for="newUserCode" class="block text-sm font-medium text-gray-700 mb-2">کد کاربری</label>
+                            <input type="text" id="newUserCode" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="4 رقم">
+                        </div>
+                        
+                        <div>
+                            <label for="newUserName" class="block text-sm font-medium text-gray-700 mb-2">نام کاربر</label>
+                            <input type="text" id="newUserName" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="نام کامل">
+                        </div>
+                        
+                        <div>
+                            <label for="newUserRole" class="block text-sm font-medium text-gray-700 mb-2">نقش</label>
+                            <select id="newUserRole" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="user">کاربر عادی</option>
+                                <option value="admin">مدیر</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-end">
+                            <button type="submit" 
+                                    class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                                افزودن
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Users List -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">لیست کاربران</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-gray-200 rounded-lg">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">کد</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">نام</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">نقش</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="divide-y divide-gray-200">
+                                <!-- Users will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- All Equipment History -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">تاریخچه کامل تجهیزات</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-gray-200 rounded-lg">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">تجهیز</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">گیرنده</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">تاریخ امانت</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">تاریخ عودت</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">امانت دهنده</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">عودت گیرنده</th>
+                                    <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allEquipmentTableBody" class="divide-y divide-gray-200">
+                                <!-- All equipment history will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Equipment Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800">ویرایش تجهیز</h2>
+            </div>
+            
+            <div class="p-6">
+                <form id="editEquipmentForm" class="space-y-4">
+                    <input type="hidden" id="editEquipmentId">
+                    
+                    <div>
+                        <label for="editEquipmentName" class="block text-sm font-medium text-gray-700 mb-2">نام تجهیز</label>
+                        <input type="text" id="editEquipmentName" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label for="editBorrowerName" class="block text-sm font-medium text-gray-700 mb-2">نام گیرنده</label>
+                        <input type="text" id="editBorrowerName" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="flex space-x-3 space-x-reverse pt-4">
+                        <button type="submit" 
+                                class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                            ذخیره تغییرات
+                        </button>
+                        <button type="button" id="cancelEdit" 
+                                class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">
+                            انصراف
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800">ویرایش کاربر</h2>
+            </div>
+            
+            <div class="p-6">
+                <form id="editUserForm" class="space-y-4">
+                    <input type="hidden" id="editUserCode">
+                    
+                    <div>
+                        <label for="editUserName" class="block text-sm font-medium text-gray-700 mb-2">نام کاربر</label>
+                        <input type="text" id="editUserName" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label for="editUserRole" class="block text-sm font-medium text-gray-700 mb-2">نقش</label>
+                        <select id="editUserRole" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="user">کاربر عادی</option>
+                            <option value="admin">مدیر</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-3 space-x-reverse pt-4">
+                        <button type="submit" 
+                                class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                            ذخیره تغییرات
+                        </button>
+                        <button type="button" id="cancelEditUser" 
+                                class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">
+                            انصراف
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JSONBin configuration
+        const JSONBIN_BIN_ID = '68ff37fdae596e708f2fed8d';
+        const JSONBIN_API_KEY = '$2a$10$K0GxG/YDDvwcCOicoQSc3OIPqPpUflP5JvKxVStM6sdQYjq4LdXKi';
+        const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3/b';
+
+        // Persian date conversion functions
+        function toPersianDate(date) {
+            return new Intl.DateTimeFormat('fa-IR').format(date);
+        }
+
+        function getCurrentPersianDate() {
+            return toPersianDate(new Date());
+        }
+
+        // Data storage variables
+        let users = {};
+        let equipment = [];
+        let currentUser = null;
+        let isDataLoaded = false;
+
+        // Database functions
+        async function loadDataFromServer() {
+            try {
+                showLoadingMessage('در حال بارگذاری اطلاعات...');
+                
+                const response = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const serverData = data.record;
+                    
+                    users = serverData.users || {};
+                    equipment = serverData.equipment || [];
+                } else {
+                    // If bin is empty or error, initialize with empty data
+                    users = {};
+                    equipment = [];
+                }
+                
+                isDataLoaded = true;
+                hideLoadingMessage();
+                
+            } catch (error) {
+                console.error('خطا در بارگذاری اطلاعات:', error);
+                // Fallback to empty data
+                users = {};
+                equipment = [];
+                isDataLoaded = true;
+                hideLoadingMessage();
+                showNotification('خطا در اتصال به سرور. از اطلاعات پیش‌فرض استفاده می‌شود.', 'error');
+            }
+        }
+
+        async function saveDataToServer() {
+            try {
+                const dataToSave = {
+                    users: users,
+                    equipment: equipment,
+                    lastUpdated: new Date().toISOString()
+                };
+
+                const response = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSave)
+                });
+
+                if (!response.ok) {
+                    throw new Error('خطا در ذخیره اطلاعات');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('خطا در ذخیره اطلاعات:', error);
+                showNotification('خطا در ذخیره اطلاعات در سرور', 'error');
+                return false;
+            }
+        }
+
+        function showLoadingMessage(message) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loadingDiv.innerHTML = `
+                <div class="bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center space-y-4">
+                    <div class="relative">
+                        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-200"></div>
+                        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent absolute top-0 left-0"></div>
+                    </div>
+                    <span class="text-gray-700 font-medium text-lg">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+        }
+
+        function hideLoadingMessage() {
+            const loadingDiv = document.getElementById('loadingMessage');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // DOM elements
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const currentUserName = document.getElementById('currentUserName');
+        const adminPanelBtn = document.getElementById('adminPanelBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const equipmentForm = document.getElementById('equipmentForm');
+        const equipmentTableBody = document.getElementById('equipmentTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const overdueNotifications = document.getElementById('overdueNotifications');
+
+        // Login functionality
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!isDataLoaded) {
+                await loadDataFromServer();
+            }
+            
+            const userCode = document.getElementById('userCode').value;
+            
+            if (users[userCode]) {
+                currentUser = { code: userCode, ...users[userCode] };
+                showMainApp();
+                checkOverdueEquipment();
+            } else {
+                showLoginError('کد کاربری نامعتبر است');
+            }
+        });
+
+        function showLoginError(message) {
+            loginError.textContent = message;
+            loginError.classList.remove('hidden');
+            setTimeout(() => {
+                loginError.classList.add('hidden');
+            }, 3000);
+        }
+
+
+
+        // Logout functionality
+        logoutBtn.addEventListener('click', function() {
+            currentUser = null;
+            mainApp.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            document.getElementById('userCode').value = '';
+            adminPanelBtn.classList.add('hidden');
+            overdueNotifications.innerHTML = '';
+        });
+
+        // Equipment form submission
+        equipmentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            showLoadingMessage('در حال ثبت امانت...');
+            
+            const equipmentName = document.getElementById('equipmentName').value;
+            const borrowerName = document.getElementById('borrowerName').value;
+            const lenderName = document.getElementById('lenderName').value;
+            
+            const newEquipment = {
+                id: Date.now(),
+                name: equipmentName,
+                borrower: borrowerName,
+                lentDate: new Date().toISOString(),
+                lentBy: lenderName || currentUser.name,
+                returned: false,
+                returnDate: null,
+                returnedBy: null
+            };
+            
+            equipment.push(newEquipment);
+            
+            // Save to server
+            const saved = await saveDataToServer();
+            hideLoadingMessage();
+            
+            if (saved) {
+                // Reset form
+                equipmentForm.reset();
+                document.getElementById('lenderName').value = '';
+                document.getElementById('lenderSuggestions').classList.add('hidden');
+                
+                // Re-render table
+                renderEquipmentTable();
+                
+                // Show success message
+                showNotification('تجهیز با موفقیت ثبت شد', 'success');
+            } else {
+                // Remove from local array if save failed
+                equipment.pop();
+                showNotification('خطا در ثبت تجهیز', 'error');
+            }
+        });
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 left-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            } fade-in`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Render equipment table
+        function renderEquipmentTable() {
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            // Filter equipment: show active + returned within 30 days
+            const visibleEquipment = equipment.filter(item => {
+                if (!item.returned) return true;
+                const returnDate = new Date(item.returnDate);
+                return returnDate > thirtyDaysAgo;
+            });
+            
+            // Sort: active first, then by date
+            visibleEquipment.sort((a, b) => {
+                if (a.returned !== b.returned) {
+                    return a.returned ? 1 : -1;
+                }
+                return new Date(b.lentDate) - new Date(a.lentDate);
+            });
+            
+            if (visibleEquipment.length === 0) {
+                equipmentTableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            equipmentTableBody.innerHTML = visibleEquipment.map((item, index) => {
+                const lentDate = new Date(item.lentDate);
+                const returnDate = item.returnDate ? new Date(item.returnDate) : null;
+                const isOverdue = !item.returned && (now - lentDate) > (10 * 24 * 60 * 60 * 1000);
+                
+                return `
+                    <tr class="${item.returned ? 'returned-row' : ''} ${isOverdue ? 'bg-red-50 border-r-4 border-red-400' : 'hover:bg-gray-50'} transition-colors">
+                        <td class="px-6 py-5 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-lg ${item.returned ? 'bg-green-100' : isOverdue ? 'bg-red-100' : 'bg-blue-100'} flex items-center justify-center">
+                                        <svg class="w-5 h-5 ${item.returned ? 'text-green-600' : isOverdue ? 'text-red-600' : 'text-blue-600'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mr-4">
+                                    <div class="text-sm font-bold text-gray-900">${item.name}</div>
+                                    ${isOverdue ? '<div class="text-xs text-red-600 font-medium">⚠️ معوقه</div>' : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ml-3">
+                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-sm font-medium text-gray-900">${item.borrower}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center ml-3">
+                                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-sm text-gray-900">${toPersianDate(lentDate)}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center ml-3">
+                                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-sm text-gray-900">${item.lentBy}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 whitespace-nowrap">
+                            ${item.returned ? 
+                                `<div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                    <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    عودت داده شده
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">${toPersianDate(returnDate)} توسط ${item.returnedBy}</div>` :
+                                `<div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-yellow-100 text-yellow-800 border border-yellow-200'}">
+                                    <div class="w-2 h-2 rounded-full ${isOverdue ? 'bg-red-400' : 'bg-yellow-400'} ml-1 animate-pulse"></div>
+                                    ${isOverdue ? 'معوقه' : 'در حال امانت'}
+                                </div>`
+                            }
+                        </td>
+                        <td class="px-6 py-5 whitespace-nowrap text-sm font-medium">
+                            ${!item.returned ? `
+                                <div class="flex space-x-2 space-x-reverse">
+                                    <button onclick="editEquipment(${item.id})" 
+                                            class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-xs font-medium">
+                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        ویرایش
+                                    </button>
+                                    <button onclick="returnEquipment(${item.id})" 
+                                            class="inline-flex items-center px-3 py-1.5 border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-xs font-medium">
+                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        عودت
+                                    </button>
+                                </div>
+                            ` : `
+                                <span class="text-gray-400 text-xs">تکمیل شده</span>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Return equipment
+        async function returnEquipment(id) {
+            showLoadingMessage('در حال ثبت عودت...');
+            
+            const item = equipment.find(eq => eq.id === id);
+            if (item) {
+                const originalState = { ...item };
+                
+                item.returned = true;
+                item.returnDate = new Date().toISOString();
+                item.returnedBy = currentUser.name;
+                
+                const saved = await saveDataToServer();
+                hideLoadingMessage();
+                
+                if (saved) {
+                    renderEquipmentTable();
+                    showNotification('تجهیز با موفقیت عودت داده شد', 'success');
+                } else {
+                    // Revert changes if save failed
+                    Object.assign(item, originalState);
+                    showNotification('خطا در ثبت عودت تجهیز', 'error');
+                }
+            } else {
+                hideLoadingMessage();
+            }
+        }
+
+        // Show lender field for admin
+        function showMainApp() {
+            loginScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            currentUserName.textContent = currentUser.name;
+            
+            if (currentUser.role === 'admin') {
+                adminPanelBtn.classList.remove('hidden');
+                document.getElementById('lenderField').classList.remove('hidden');
+                setupLenderAutocomplete();
+            }
+            
+            renderEquipmentTable();
+        }
+
+        // Setup lender autocomplete
+        function setupLenderAutocomplete() {
+            const lenderInput = document.getElementById('lenderName');
+            const suggestionsDiv = document.getElementById('lenderSuggestions');
+            
+            lenderInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                if (query.length < 1) {
+                    suggestionsDiv.classList.add('hidden');
+                    return;
+                }
+                
+                const userNames = Object.values(users).map(user => user.name);
+                const filteredNames = userNames.filter(name => 
+                    name.toLowerCase().includes(query)
+                );
+                
+                if (filteredNames.length > 0) {
+                    suggestionsDiv.innerHTML = filteredNames.map(name => 
+                        `<div class="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0" onclick="selectLender('${name}')">${name}</div>`
+                    ).join('');
+                    suggestionsDiv.classList.remove('hidden');
+                } else {
+                    suggestionsDiv.classList.add('hidden');
+                }
+            });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!lenderInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                    suggestionsDiv.classList.add('hidden');
+                }
+            });
+        }
+
+        function selectLender(name) {
+            document.getElementById('lenderName').value = name;
+            document.getElementById('lenderSuggestions').classList.add('hidden');
+        }
+
+        // Edit equipment
+        let editingEquipmentId = null;
+
+        function editEquipment(id) {
+            const item = equipment.find(eq => eq.id === id);
+            if (item) {
+                editingEquipmentId = id;
+                document.getElementById('editEquipmentId').value = id;
+                document.getElementById('editEquipmentName').value = item.name;
+                document.getElementById('editBorrowerName').value = item.borrower;
+                document.getElementById('editModal').classList.remove('hidden');
+            }
+        }
+
+        // Edit form submission
+        document.getElementById('editEquipmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            showLoadingMessage('در حال ذخیره تغییرات...');
+            
+            const id = parseInt(document.getElementById('editEquipmentId').value);
+            const name = document.getElementById('editEquipmentName').value;
+            const borrower = document.getElementById('editBorrowerName').value;
+            
+            const item = equipment.find(eq => eq.id === id);
+            if (item) {
+                const originalName = item.name;
+                const originalBorrower = item.borrower;
+                
+                item.name = name;
+                item.borrower = borrower;
+                
+                const saved = await saveDataToServer();
+                hideLoadingMessage();
+                
+                if (saved) {
+                    renderEquipmentTable();
+                    document.getElementById('editModal').classList.add('hidden');
+                    showNotification('تجهیز با موفقیت ویرایش شد', 'success');
+                } else {
+                    // Revert changes if save failed
+                    item.name = originalName;
+                    item.borrower = originalBorrower;
+                    showNotification('خطا در ویرایش تجهیز', 'error');
+                }
+            } else {
+                hideLoadingMessage();
+            }
+        });
+
+        // Cancel edit
+        document.getElementById('cancelEdit').addEventListener('click', function() {
+            document.getElementById('editModal').classList.add('hidden');
+        });
+
+        // Check overdue equipment
+        function checkOverdueEquipment() {
+            const now = new Date();
+            const overdueItems = equipment.filter(item => {
+                if (item.returned) return false;
+                const lentDate = new Date(item.lentDate);
+                const daysDiff = (now - lentDate) / (1000 * 60 * 60 * 24);
+                return daysDiff > 10 && item.lentBy === currentUser.name;
+            });
+            
+            if (overdueItems.length > 0) {
+                const notification = document.createElement('div');
+                notification.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 overdue-notification';
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <strong>هشدار:</strong> ${overdueItems.length} تجهیز بیش از 10 روز معوقه است. لطفاً پیگیری کنید.
+                            <ul class="mt-2 text-sm">
+                                ${overdueItems.map(item => `<li>• ${item.name} - ${item.borrower}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                overdueNotifications.appendChild(notification);
+            }
+        }
+
+        // Admin Panel
+        adminPanelBtn.addEventListener('click', function() {
+            document.getElementById('adminModal').classList.remove('hidden');
+            renderUsersTable();
+            renderAllEquipmentTable();
+        });
+
+        document.getElementById('closeAdminModal').addEventListener('click', function() {
+            document.getElementById('adminModal').classList.add('hidden');
+        });
+
+        // Add user form
+        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const code = document.getElementById('newUserCode').value;
+            const name = document.getElementById('newUserName').value;
+            const role = document.getElementById('newUserRole').value;
+            
+            if (users[code]) {
+                showNotification('این کد کاربری قبلاً ثبت شده است', 'error');
+                return;
+            }
+            
+            showLoadingMessage('در حال افزودن کاربر...');
+            
+            users[code] = { name, role };
+            
+            const saved = await saveDataToServer();
+            hideLoadingMessage();
+            
+            if (saved) {
+                // Reset form
+                document.getElementById('addUserForm').reset();
+                
+                renderUsersTable();
+                showNotification('کاربر با موفقیت اضافه شد', 'success');
+            } else {
+                // Remove user if save failed
+                delete users[code];
+                showNotification('خطا در افزودن کاربر', 'error');
+            }
+        });
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = Object.entries(users).map(([code, user]) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium">${code}</td>
+                    <td class="px-4 py-3 text-sm">${user.name}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
+                            ${user.role === 'admin' ? 'مدیر' : 'کاربر عادی'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <div class="flex space-x-2 space-x-reverse">
+                            <button onclick="editUser('${code}')" 
+                                    class="inline-flex items-center px-2 py-1 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded text-xs">
+                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                ویرایش
+                            </button>
+                            ${code !== currentUser.code ? `
+                                <button onclick="deleteUser('${code}')" 
+                                        class="inline-flex items-center px-2 py-1 border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 rounded text-xs">
+                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    حذف
+                                </button>
+                            ` : `
+                                <span class="inline-flex items-center px-2 py-1 text-gray-400 text-xs">
+                                    (شما)
+                                </span>
+                            `}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function changeUserRole(code, newRole) {
+            const originalRole = users[code].role;
+            users[code].role = newRole;
+            
+            const saved = await saveDataToServer();
+            if (saved) {
+                // Update current user if it's the same user
+                if (currentUser && currentUser.code === code) {
+                    currentUser.role = newRole;
+                    if (newRole === 'admin') {
+                        adminPanelBtn.classList.remove('hidden');
+                    } else {
+                        adminPanelBtn.classList.add('hidden');
+                        document.getElementById('adminModal').classList.add('hidden');
+                    }
+                }
+                
+                showNotification('نقش کاربر تغییر یافت', 'success');
+            } else {
+                // Revert change if save failed
+                users[code].role = originalRole;
+                renderUsersTable();
+                showNotification('خطا در تغییر نقش کاربر', 'error');
+            }
+        }
+
+        async function deleteUser(code) {
+            const deletedUser = users[code];
+            delete users[code];
+            
+            const saved = await saveDataToServer();
+            if (saved) {
+                renderUsersTable();
+                showNotification('کاربر حذف شد', 'success');
+            } else {
+                // Restore user if save failed
+                users[code] = deletedUser;
+                renderUsersTable();
+                showNotification('خطا در حذف کاربر', 'error');
+            }
+        }
+
+        function renderAllEquipmentTable() {
+            const tbody = document.getElementById('allEquipmentTableBody');
+            const sortedEquipment = [...equipment].sort((a, b) => new Date(b.lentDate) - new Date(a.lentDate));
+            
+            tbody.innerHTML = sortedEquipment.map(item => {
+                const lentDate = new Date(item.lentDate);
+                const returnDate = item.returnDate ? new Date(item.returnDate) : null;
+                
+                return `
+                    <tr class="${item.returned ? 'bg-green-50' : 'bg-yellow-50'} hover:bg-gray-100 transition-colors">
+                        <td class="px-4 py-3 text-sm font-medium">${item.name}</td>
+                        <td class="px-4 py-3 text-sm">${item.borrower}</td>
+                        <td class="px-4 py-3 text-sm">${toPersianDate(lentDate)}</td>
+                        <td class="px-4 py-3 text-sm">${returnDate ? toPersianDate(returnDate) : '-'}</td>
+                        <td class="px-4 py-3 text-sm">${item.lentBy}</td>
+                        <td class="px-4 py-3 text-sm">${item.returnedBy || '-'}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <button onclick="deleteEquipment(${item.id})" 
+                                    class="inline-flex items-center px-2 py-1 border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 rounded text-xs">
+                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                حذف
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Edit user function
+        function editUser(code) {
+            const user = users[code];
+            if (user) {
+                document.getElementById('editUserCode').value = code;
+                document.getElementById('editUserName').value = user.name;
+                document.getElementById('editUserRole').value = user.role;
+                document.getElementById('editUserModal').classList.remove('hidden');
+            }
+        }
+
+        // Edit user form submission
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            showLoadingMessage('در حال ذخیره تغییرات...');
+            
+            const code = document.getElementById('editUserCode').value;
+            const name = document.getElementById('editUserName').value;
+            const role = document.getElementById('editUserRole').value;
+            
+            const originalUser = { ...users[code] };
+            users[code] = { name, role };
+            
+            const saved = await saveDataToServer();
+            hideLoadingMessage();
+            
+            if (saved) {
+                // Update current user if it's the same user
+                if (currentUser && currentUser.code === code) {
+                    currentUser.name = name;
+                    currentUser.role = role;
+                    currentUserName.textContent = name;
+                    
+                    if (role === 'admin') {
+                        adminPanelBtn.classList.remove('hidden');
+                        document.getElementById('lenderField').classList.remove('hidden');
+                        setupLenderAutocomplete();
+                    } else {
+                        adminPanelBtn.classList.add('hidden');
+                        document.getElementById('lenderField').classList.add('hidden');
+                        document.getElementById('adminModal').classList.add('hidden');
+                    }
+                }
+                
+                renderUsersTable();
+                document.getElementById('editUserModal').classList.add('hidden');
+                showNotification('کاربر با موفقیت ویرایش شد', 'success');
+            } else {
+                // Revert changes if save failed
+                users[code] = originalUser;
+                showNotification('خطا در ویرایش کاربر', 'error');
+            }
+        });
+
+        // Cancel edit user
+        document.getElementById('cancelEditUser').addEventListener('click', function() {
+            document.getElementById('editUserModal').classList.add('hidden');
+        });
+
+        // Delete user function
+        async function deleteUser(code) {
+            // Prevent admin from deleting themselves
+            if (currentUser && currentUser.code === code) {
+                showNotification('شما نمی‌توانید خود را حذف کنید', 'error');
+                return;
+            }
+            
+            // Show confirmation dialog
+            showConfirmDialog(
+                'حذف کاربر',
+                `آیا مطمئن هستید که می‌خواهید کاربر "${users[code].name}" را حذف کنید؟`,
+                async () => {
+                    showLoadingMessage('در حال حذف کاربر...');
+                    
+                    const deletedUser = users[code];
+                    delete users[code];
+                    
+                    const saved = await saveDataToServer();
+                    hideLoadingMessage();
+                    
+                    if (saved) {
+                        renderUsersTable();
+                        showNotification('کاربر حذف شد', 'success');
+                    } else {
+                        // Restore user if save failed
+                        users[code] = deletedUser;
+                        renderUsersTable();
+                        showNotification('خطا در حذف کاربر', 'error');
+                    }
+                }
+            );
+        }
+
+        // Delete equipment function
+        async function deleteEquipment(id) {
+            const item = equipment.find(eq => eq.id === id);
+            if (!item) return;
+            
+            // Show confirmation dialog
+            showConfirmDialog(
+                'حذف تجهیز',
+                `آیا مطمئن هستید که می‌خواهید تجهیز "${item.name}" را حذف کنید؟`,
+                async () => {
+                    showLoadingMessage('در حال حذف تجهیز...');
+                    
+                    const itemIndex = equipment.findIndex(eq => eq.id === id);
+                    const deletedItem = equipment[itemIndex];
+                    equipment.splice(itemIndex, 1);
+                    
+                    const saved = await saveDataToServer();
+                    hideLoadingMessage();
+                    
+                    if (saved) {
+                        renderEquipmentTable();
+                        renderAllEquipmentTable();
+                        showNotification('تجهیز حذف شد', 'success');
+                    } else {
+                        // Restore item if save failed
+                        equipment.splice(itemIndex, 0, deletedItem);
+                        renderAllEquipmentTable();
+                        showNotification('خطا در حذف تجهیز', 'error');
+                    }
+                }
+            );
+        }
+
+        // Show confirmation dialog
+        function showConfirmDialog(title, message, onConfirm) {
+            const dialog = document.createElement('div');
+            dialog.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            dialog.innerHTML = `
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-800">${title}</h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-600 mb-6">${message}</p>
+                        <div class="flex space-x-3 space-x-reverse">
+                            <button id="confirmBtn" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                                تایید
+                            </button>
+                            <button id="cancelBtn" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">
+                                انصراف
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(dialog);
+            
+            dialog.querySelector('#confirmBtn').addEventListener('click', () => {
+                dialog.remove();
+                onConfirm();
+            });
+            
+            dialog.querySelector('#cancelBtn').addEventListener('click', () => {
+                dialog.remove();
+            });
+            
+            // Close on backdrop click
+            dialog.addEventListener('click', (e) => {
+                if (e.target === dialog) {
+                    dialog.remove();
+                }
+            });
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // App will load data when user tries to login
+            renderEquipmentTable();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99513cd406256910',t:'MTc2MTU1ODA4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
