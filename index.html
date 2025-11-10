@@ -15,6 +15,59 @@
 <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 
     <style>
+
+/* Responsive top action buttons: wrap into multiple rows on small screens */
+.top-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap; /* allow wrapping to multiple lines */
+    align-items: center;
+    justify-content: flex-end; /* keep on the right for RTL layout on wide screens */
+}
+
+/* Make each action button adapt: allow them to shrink but keep a sensible min width */
+.top-actions .btn {
+    flex: 0 1 auto;
+    min-width: 110px;
+}
+
+/* On medium screens, let two buttons share a row */
+@media (max-width: 900px) {
+    .top-actions .btn {
+        min-width: 42%;
+        flex: 0 1 42%;
+    }
+}
+
+/* On small screens, make buttons more compact and stack into full width rows */
+@media (max-width: 480px) {
+    .top-actions {
+        justify-content: center;
+    }
+    .top-actions .btn {
+        min-width: 100%;
+        flex: 0 1 100%;
+        text-align: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .top-actions .btn i {
+        margin-left: 0.35rem; /* adjust icon spacing for RTL */
+        margin-right: 0;
+    }
+}
+
+/* Ensure icon + text spacing is consistent in RTL */
+.btn i {
+    margin-left: 0.5rem;
+}
+
+/* Prevent overflow of header area */
+.header-row { width: 100%; box-sizing: border-box; }
+
+/* Ensure modals and floating elements are not overlapped */
+.task-stats { max-width: 95vw; box-sizing: border-box; }
+
         :root {
             --primary: #3b82f6;
             --primary-hover: #2563eb;
@@ -966,13 +1019,14 @@
     <div class="container mx-auto" id="mainContent" style="display: none;">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-center">سررسید دیجیتال</h1>
-            <div class="flex gap-2">
+            <div class="flex gap-2 top-actions header-row">
                 <button id="searchToggle" class="btn btn-secondary search-toggle">
                     <i class="fas fa-search mr-1"></i> جستجو
                 </button>
                 <button id="ratingToggle" class="btn btn-secondary"><i class="fas fa-star mr-1"></i> SCORE</button>
 <button id="openEquipmentIframe" class="btn btn-secondary"><i class="fas fa-toolbox mr-1"></i> امانت تجهیزات</button>
 <button id="openEzafeKarIframe" class="btn btn-secondary"><i class="fas fa-clock mr-1"></i> محاسبه اضافه‌کار</button>
+<button id="openRequestsIframe" class="btn btn-secondary"><i class="fas fa-list mr-1"></i> درخواست‌ها</button>
         <button id="settingsToggle" class="btn btn-secondary">
                     <i class="fas fa-cog mr-1"></i> تنظیمات
                 </button>
@@ -4818,7 +4872,7 @@ function updateSelectedDateLabel() {
 <div id="equipmentIframeContainer" 
      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.7); z-index:9999;">
-    <div style="position:relative; width:95%; height:90%; margin:2.5% auto; background:white; border-radius:10px; overflow:hidden;">
+    <div style="position:relative; width:100%; height:100%; margin:0; background:white; border-radius:0; overflow:hidden;">
         <button id="closeEquipmentIframe" 
                 style="position:absolute; top:10px; left:10px; z-index:10000;"
                 class="btn btn-danger btn-sm">
@@ -4856,6 +4910,31 @@ document.getElementById("openEzafeKarIframe").addEventListener("click", function
 document.getElementById("closeEzafeKarIframe").addEventListener("click", function() {
   document.getElementById("ezafekarContainer").style.display = "none";
   document.getElementById("mainContent").style.display = "block";
+});
+</script>
+
+
+<!-- Iframe درخواست‌ها -->
+<div id="requestsIframeContainer" 
+     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999;">
+    <div style="position:relative; width:100%; height:100%; margin:0; background:white; border-radius:0; overflow:hidden;">
+        <button id="closeRequestsIframe" 
+                style="position:absolute; top:10px; left:10px; z-index:10000;"
+                class="btn btn-danger btn-sm">
+            <i class="fas fa-times"></i> بستن
+        </button>
+        <iframe id="requestsIframe" src="jens.htm" 
+                style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+</div>
+<script>
+document.getElementById('openRequestsIframe').addEventListener('click', () => {
+    document.getElementById('mainContent').style.display='none';
+    document.getElementById('requestsIframeContainer').style.display = 'block';
+});
+document.getElementById('closeRequestsIframe').addEventListener('click', () => {
+    document.getElementById('requestsIframeContainer').style.display = 'none';
+    document.getElementById('mainContent').style.display='block';
 });
 </script>
 
