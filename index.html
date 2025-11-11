@@ -16,6 +16,32 @@
 
     <style>
 
+/* استایل برای دکمه‌های مخفی */
+.hidden-btn {
+    display: none !important;
+}
+
+/* استایل برای دکمه‌های زمانی که نمایش داده می‌شوند */
+.visible-btn {
+    display: inline-block !important;
+}
+
+/* برای دکمه منو در حالت موبایل و تبلت ممکن است نیاز به تنظیمات responsive باشد */
+@media (max-width: 900px) {
+    .top-actions .btn {
+        min-width: 42%;
+        flex: 0 1 42%;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-actions .btn {
+        min-width: 100%;
+        flex: 0 1 100%;
+    }
+}
+
+
 /* Responsive top action buttons: wrap into multiple rows on small screens */
 .top-actions {
     display: flex;
@@ -1019,18 +1045,26 @@
     <div class="container mx-auto" id="mainContent" style="display: none;">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-center">سررسید دیجیتال</h1>
-            <div class="flex gap-2 top-actions header-row">
-                <button id="searchToggle" class="btn btn-secondary search-toggle">
-                    <i class="fas fa-search mr-1"></i> جستجو
-                </button>
-                <button id="ratingToggle" class="btn btn-secondary"><i class="fas fa-star mr-1"></i> SCORE</button>
-<button id="openEquipmentIframe" class="btn btn-secondary"><i class="fas fa-toolbox mr-1"></i> امانت تجهیزات</button>
-<button id="openEzafeKarIframe" class="btn btn-secondary"><i class="fas fa-clock mr-1"></i> محاسبه اضافه‌کار</button>
-<button id="openRequestsIframe" class="btn btn-secondary"><i class="fas fa-list mr-1"></i> درخواست‌ها</button>
-        <button id="settingsToggle" class="btn btn-secondary">
-                    <i class="fas fa-cog mr-1"></i> تنظیمات
-                </button>
-            </div>
+<div class="flex gap-2 top-actions header-row">
+
+
+
+    <button id="ratingToggle" class="btn btn-secondary hidden-btn"><i class="fas fa-star mr-1"></i> SCORE</button>
+    <button id="openEquipmentIframe" class="btn btn-secondary hidden-btn"><i class="fas fa-toolbox mr-1"></i> امانت تجهیزات</button>
+    <button id="openEzafeKarIframe" class="btn btn-secondary hidden-btn"><i class="fas fa-clock mr-1"></i> محاسبه اضافه‌کار</button>
+    <button id="openRequestsIframe" class="btn btn-secondary hidden-btn"><i class="fas fa-list mr-1"></i> درخواست‌ها</button>
+
+    <button id="settingsToggle" class="btn btn-secondary hidden-btn">
+        <i class="fas fa-cog mr-1"></i> تنظیمات
+    </button>
+    <!-- دکمه نمایش/مخفی کردن -->
+    <button id="toggleMenuButtons" class="btn btn-primary">
+        <i class="fas fa-bars mr-1"></i> منو
+    </button>
+    <button id="searchToggle" class="btn btn-secondary search-toggle">
+        <i class="fas fa-search mr-1"></i> جستجو
+    </button>
+</div>
         </div>
         
         
@@ -4937,6 +4971,99 @@ document.getElementById('closeRequestsIframe').addEventListener('click', () => {
     document.getElementById('mainContent').style.display='block';
 });
 </script>
+
+
+
+
+
+
+
+<style>
+.inprogress-task {
+  background-color: #fff7ed; /* رنگ زمینه نارنجی روشن */
+  border-color: #fdba74;     /* حاشیه نارنجی */
+}
+.inprogress-label {
+  font-size: 0.8rem;
+  color: #ea580c;
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+</style>
+
+<script>
+// افزودن تابع تغییر وضعیت به در حال انجام
+function markTaskInProgress(date, index) {
+  if (!tasks[date] || !tasks[date][index]) return;
+  tasks[date][index].status = 'inprogress';
+  saveTasksLocal();
+  renderTasks();
+  showNotification('کار به حالت در حال انجام تغییر یافت');
+}
+
+// اصلاح تابع renderTasks برای نمایش دکمه جدید و ظاهر متفاوت
+const originalRenderTasks = renderTasks;
+renderTasks = function() {
+  originalRenderTasks();
+  document.querySelectorAll('.task-item').forEach((item, i) => {
+    const date = selectedDate.format('YYYY-MM-DD');
+    const task = tasks[date] && tasks[date][i];
+    if (!task) return;
+
+    // افزودن استایل خاص اگر در حال انجام بود
+    if (task.status === 'inprogress') {
+      item.classList.add('inprogress-task');
+      if (!item.querySelector('.inprogress-label')) {
+        const label = document.createElement('span');
+        label.className = 'inprogress-label';
+        label.textContent = 'در حال انجام';
+        item.querySelector('.task-text')?.prepend(label);
+      }
+    }
+
+    // افزودن دکمه جدید در task-actions اگر هنوز وجود ندارد
+    const actions = item.querySelector('.task-actions');
+    if (actions && !actions.querySelector('.btn-inprogress')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-warning btn-sm btn-inprogress';
+      btn.innerHTML = '<i class="fas fa-spinner"></i> در حال انجام';
+      btn.onclick = () => markTaskInProgress(date, i);
+      actions.prepend(btn);
+    }
+  });
+};
+
+
+// مدیریت نمایش/مخفی کردن دکمه‌های منو
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleMenuButtons');
+    const hiddenButtons = document.querySelectorAll('.hidden-btn');
+    let isVisible = false;
+
+    toggleButton.addEventListener('click', function() {
+        if (isVisible) {
+            // مخفی کردن دکمه‌ها
+            hiddenButtons.forEach(btn => {
+                btn.classList.remove('visible-btn');
+                btn.classList.add('hidden-btn');
+            });
+            // تغییر آیکون دکمه منو
+            toggleButton.innerHTML = '<i class="fas fa-bars mr-1"></i> منو';
+        } else {
+            // نمایش دکمه‌ها
+            hiddenButtons.forEach(btn => {
+                btn.classList.remove('hidden-btn');
+                btn.classList.add('visible-btn');
+            });
+            // تغییر آیکون دکمه منو
+            toggleButton.innerHTML = '<i class="fas fa-times mr-1"></i> بستن';
+        }
+        
+        isVisible = !isVisible;
+    });
+});
+</script>
+
 
 </body>
 </html>
