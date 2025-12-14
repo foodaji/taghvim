@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>مدیریت درخواستها</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
   <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
         
@@ -155,6 +154,38 @@
             white-space: pre-line;
             word-wrap: break-word;
             max-width: 200px;
+            cursor: help;
+            position: relative;
+        }
+        
+        /* استایل برای Tooltip */
+        .description-text:hover::after {
+            content: attr(data-fulltext);
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            max-width: 300px;
+            width: max-content;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+        
+        .description-text:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            right: 20px;
+            border: 6px solid transparent;
+            border-top-color: #333;
+            margin-bottom: -1px;
         }
         
         .description-modal {
@@ -269,15 +300,6 @@
             border-radius: 20px;
             font-size: 0.9rem;
             width: 200px;
-        }
-        
-        .date-input {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-family: inherit;
-            width: 140px;
         }
         
         .filter-select {
@@ -468,8 +490,22 @@
                 border-radius: 0;
             }
             
+            .header,
             .folder-section,
             .files-header,
+            .content {
+                display: none !important;
+            }
+            
+            .files-section {
+                border: none;
+            }
+            
+            .table-container {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            
             .search-box,
             .live-search-box,
             .filters-container,
@@ -479,13 +515,6 @@
             .row-checkbox,
             .checkbox-cell {
                 display: none !important;
-            }
-            
-            .header {
-                background: #667eea !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                page-break-after: avoid;
             }
             
             table {
@@ -566,9 +595,7 @@
        </div>
        <div class="filter-group"><label class="filter-label">دسته‌بندی</label> <select id="categoryFilter" class="filter-select"> <option value="all">همه</option> <option value="جنس">جنس</option> <option value="خدمات">خدمات</option> <option value="سایر">سایر</option> </select>
        </div>
-       <div class="filter-group"><label class="filter-label">از تاریخ</label> <input type="text" id="dateFrom" class="date-input" placeholder="انتخاب تاریخ" readonly>
-       </div>
-       <div class="filter-group"><label class="filter-label">تا تاریخ</label> <input type="text" id="dateTo" class="date-input" placeholder="انتخاب تاریخ" readonly>
+       <div class="filter-group"><label class="filter-label">بازه زمانی</label> <select id="dateRangeFilter" class="filter-select"> <option value="all">همه</option> <option value="today">امروز</option> <option value="yesterday">دیروز</option> <option value="week">یک هفته اخیر</option> <option value="2weeks">دو هفته اخیر</option> <option value="month">یک ماه اخیر</option> <option value="3months">سه ماه اخیر</option> <option value="6months">شش ماه اخیر</option> <option value="year">یک سال اخیر</option> </select>
        </div>
        <div class="filter-group"><label class="filter-label" style="opacity: 0;">عملیات</label> <button id="clearFilters" class="clear-filters-button">پاک کردن فیلترها</button>
        </div>
@@ -611,9 +638,6 @@
     </div>
    </div>
   </div>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
   <script>
         let currentFiles = [];
         let sortColumn = 4; // Default sort by date
@@ -774,91 +798,7 @@
         // بارگذاری داده‌های ذخیره شده هنگام باز شدن صفحه
         window.addEventListener('load', function() {
             loadDataFromCloud();
-            initializePersianDatePickers();
         });
-        
-        // راه‌اندازی تقویم شمسی
-        function initializePersianDatePickers() {
-            if (typeof $ !== 'undefined' && $.fn.persianDatepicker) {
-                $('#dateFrom').persianDatepicker({
-                    format: 'YYYY/MM/DD',
-                    initialValue: false,
-                    autoClose: true,
-                    timePicker: {
-                        enabled: false
-                    },
-                    dayPicker: {
-                        enabled: true
-                    },
-                    observer: true,
-                    altField: '#dateFrom',
-                    altFormat: 'YYYY/MM/DD',
-                    onSelect: function(unix) {
-                        applyFilters();
-                    }
-                });
-                
-                $('#dateTo').persianDatepicker({
-                    format: 'YYYY/MM/DD',
-                    initialValue: false,
-                    autoClose: true,
-                    timePicker: {
-                        enabled: false
-                    },
-                    dayPicker: {
-                        enabled: true
-                    },
-                    observer: true,
-                    altField: '#dateTo',
-                    altFormat: 'YYYY/MM/DD',
-                    onSelect: function(unix) {
-                        applyFilters();
-                    }
-                });
-            }
-        }
-        
-        // تبدیل تاریخ شمسی به میلادی
-        function persianToGregorianTimestamp(persianDate, endOfDay = false) {
-            try {
-                if (typeof persianDate !== 'string' || !persianDate.trim()) {
-                    return null;
-                }
-                
-                const parts = persianDate.split('/');
-                if (parts.length !== 3) {
-                    return null;
-                }
-                
-                const year = parseInt(parts[0]);
-                const month = parseInt(parts[1]);
-                const day = parseInt(parts[2]);
-                
-                if (isNaN(year) || isNaN(month) || isNaN(day)) {
-                    return null;
-                }
-                
-                // استفاده از کتابخانه persian-date برای تبدیل
-                if (typeof persianDate !== 'undefined') {
-                    const pDate = new persianDate([year, month, day]);
-                    const gDate = pDate.toCalendar('gregorian');
-                    const gregorianDate = new Date(gDate.year(), gDate.month() - 1, gDate.date());
-                    
-                    if (endOfDay) {
-                        gregorianDate.setHours(23, 59, 59, 999);
-                    } else {
-                        gregorianDate.setHours(0, 0, 0, 0);
-                    }
-                    
-                    return gregorianDate.getTime();
-                }
-                
-                return null;
-            } catch (error) {
-                console.error('خطا در تبدیل تاریخ:', error);
-                return null;
-            }
-        }
         
         // Modal event listeners
         document.getElementById('saveDescription').addEventListener('click', saveDescription);
@@ -880,12 +820,8 @@
                     const pathParts = fullPath.split('/');
                     
                     // تشخیص آدرس کامل پوشه از مسیر فایل
-                    // مثال: اگر فایل در مسیر "jens/goods/file.doc" باشد
-                    // آدرس پوشه اصلی را استخراج می‌کنیم
                     const folderName = pathParts[0];
                     
-                    // تلاش برای تشخیص درایو و مسیر کامل
-                    // از آنجا که مرورگر آدرس کامل را نمی‌دهد، باید حدس بزنیم
                     selectedFolderPath = `D:\\${folderName}`;
                     
                     console.log('نام پوشه انتخابی:', folderName);
@@ -920,16 +856,14 @@
         
         document.getElementById('statusFilter').addEventListener('change', applyFilters);
         document.getElementById('categoryFilter').addEventListener('change', applyFilters);
-        document.getElementById('dateFrom').addEventListener('change', applyFilters);
-        document.getElementById('dateTo').addEventListener('change', applyFilters);
+        document.getElementById('dateRangeFilter').addEventListener('change', applyFilters);
         
         document.getElementById('clearFilters').addEventListener('click', function() {
             document.getElementById('searchBox').value = '';
             document.getElementById('liveSearchBox').value = '';
             document.getElementById('statusFilter').value = 'all';
             document.getElementById('categoryFilter').value = 'all';
-            document.getElementById('dateFrom').value = '';
-            document.getElementById('dateTo').value = '';
+            document.getElementById('dateRangeFilter').value = 'all';
             applyFilters();
         });
         
@@ -939,27 +873,45 @@
             preparePrintView();
             setTimeout(function() {
                 window.print();
-            }, 250);
+            }, 500);
             return false;
         });
         
-        function parseFileName(fileName) {
+        // تابع تشخیص هوشمند قیمت بر اساس دسته‌بندی
+        function parseFileName(fileName, category) {
             // Remove file extension
             const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
             
-            // Extract numbers from the beginning of filename
-            const numberMatches = nameWithoutExt.match(/^(\d+)(?:\s*-?\s*(\d+))?(.*)$/);
-            
-            if (numberMatches) {
-                const rowNumber = parseInt(numberMatches[1]);
-                const estimatedPrice = numberMatches[2] ? parseInt(numberMatches[2]) : null;
-                const description = numberMatches[3] ? numberMatches[3].trim().replace(/^[-\s]+/, '') : '';
+            // برای پوشه خدمات: عدد اول قیمت است
+            if (category === 'خدمات') {
+                // Extract first number as price
+                const firstNumberMatch = nameWithoutExt.match(/(\d+)/);
+                if (firstNumberMatch) {
+                    const estimatedPrice = parseInt(firstNumberMatch[1]);
+                    // Remove the price from description
+                    const description = nameWithoutExt.replace(/^\d+\s*-?\s*/, '').trim() || fileName;
+                    
+                    return {
+                        rowNumber: null,
+                        estimatedPrice: estimatedPrice,
+                        description: description
+                    };
+                }
+            } else {
+                // برای پوشه جنس: روش قبلی (شماره - قیمت - شرح)
+                const numberMatches = nameWithoutExt.match(/^(\d+)(?:\s*-?\s*(\d+))?(.*)$/);
                 
-                return {
-                    rowNumber: rowNumber,
-                    estimatedPrice: estimatedPrice,
-                    description: description || fileName
-                };
+                if (numberMatches) {
+                    const rowNumber = parseInt(numberMatches[1]);
+                    const estimatedPrice = numberMatches[2] ? parseInt(numberMatches[2]) : null;
+                    const description = numberMatches[3] ? numberMatches[3].trim().replace(/^[-\s]+/, '') : '';
+                    
+                    return {
+                        rowNumber: rowNumber,
+                        estimatedPrice: estimatedPrice,
+                        description: description || fileName
+                    };
+                }
             }
             
             return {
@@ -997,7 +949,6 @@
             allFiles.sort((a, b) => b.lastModified - a.lastModified);
             
             currentFiles = allFiles.map((file, index) => {
-                const parsedName = parseFileName(file.name);
                 const path = file.webkitRelativePath || file.name;
                 let category = 'سایر';
                 
@@ -1006,6 +957,9 @@
                 } else if (path.includes('/خدمات/') || path.includes('/services/')) {
                     category = 'خدمات';
                 }
+                
+                // Parse file name with category-specific logic
+                const parsedName = parseFileName(file.name, category);
                 
                 // ساخت آدرس کامل فایل
                 const fullFilePath = selectedFolderPath ? `${selectedFolderPath}/${path.split('/').slice(1).join('/')}` : path;
@@ -1159,11 +1113,6 @@
                     row.classList.add('completed-row');
                 }
                 
-                const descriptionPreview = fileDescriptions[file.fullPath] ? 
-                    `<br><small class="description-text">${fileDescriptions[file.fullPath].length > 50 ? 
-                        fileDescriptions[file.fullPath].substring(0, 50) + '...' : 
-                        fileDescriptions[file.fullPath]}</small>` : '';
-                
                 const categoryColor = file.category === 'جنس' ? '#28a745' : file.category === 'خدمات' ? '#007bff' : '#6c757d';
                 
                 // Create checkbox cell
@@ -1212,6 +1161,7 @@
                     descPreview.style.marginTop = '5px';
                     const text = fileDescriptions[file.fullPath];
                     descPreview.textContent = text.length > 50 ? text.substring(0, 50) + '...' : text;
+                    descPreview.setAttribute('data-fulltext', text); // برای نمایش Tooltip
                     descriptionCell.appendChild(document.createElement('br'));
                     descriptionCell.appendChild(descPreview);
                 }
@@ -1286,6 +1236,37 @@
             }
         }
         
+        function getDateRangeTimestamp(rangeValue) {
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            
+            switch(rangeValue) {
+                case 'today':
+                    const todayStart = new Date();
+                    todayStart.setHours(0, 0, 0, 0);
+                    return todayStart.getTime();
+                case 'yesterday':
+                    const yesterdayStart = new Date();
+                    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+                    yesterdayStart.setHours(0, 0, 0, 0);
+                    return yesterdayStart.getTime();
+                case 'week':
+                    return now - (7 * oneDay);
+                case '2weeks':
+                    return now - (14 * oneDay);
+                case 'month':
+                    return now - (30 * oneDay);
+                case '3months':
+                    return now - (90 * oneDay);
+                case '6months':
+                    return now - (180 * oneDay);
+                case 'year':
+                    return now - (365 * oneDay);
+                default:
+                    return null;
+            }
+        }
+        
         function applyFilters() {
             let filteredFiles = [...currentFiles];
             
@@ -1325,21 +1306,12 @@
                 filteredFiles = filteredFiles.filter(file => file.category === categoryFilter);
             }
             
-            // فیلتر تاریخ از
-            const dateFrom = document.getElementById('dateFrom').value;
-            if (dateFrom) {
-                const fromTimestamp = persianToGregorianTimestamp(dateFrom);
+            // فیلتر بازه زمانی
+            const dateRange = document.getElementById('dateRangeFilter').value;
+            if (dateRange !== 'all') {
+                const fromTimestamp = getDateRangeTimestamp(dateRange);
                 if (fromTimestamp) {
                     filteredFiles = filteredFiles.filter(file => file.lastModified >= fromTimestamp);
-                }
-            }
-            
-            // فیلتر تاریخ تا
-            const dateTo = document.getElementById('dateTo').value;
-            if (dateTo) {
-                const toTimestamp = persianToGregorianTimestamp(dateTo, true);
-                if (toTimestamp) {
-                    filteredFiles = filteredFiles.filter(file => file.lastModified <= toTimestamp);
                 }
             }
             
@@ -1347,10 +1319,6 @@
         }
         
         function filterFiles(searchTerm) {
-            applyFilters();
-        }
-        
-        function liveSearchInDescription(searchTerm) {
             applyFilters();
         }
         
@@ -1506,13 +1474,19 @@
                 filterInfo.push(`دسته‌بندی: ${categoryFilter}`);
             }
             
-            const dateFrom = document.getElementById('dateFrom').value;
-            const dateTo = document.getElementById('dateTo').value;
-            if (dateFrom || dateTo) {
-                let dateRange = 'بازه تاریخ: ';
-                if (dateFrom) dateRange += `از ${dateFrom}`;
-                if (dateTo) dateRange += ` تا ${dateTo}`;
-                filterInfo.push(dateRange);
+            const dateRange = document.getElementById('dateRangeFilter').value;
+            if (dateRange !== 'all') {
+                const rangeLabels = {
+                    'today': 'امروز',
+                    'yesterday': 'دیروز',
+                    'week': 'یک هفته اخیر',
+                    '2weeks': 'دو هفته اخیر',
+                    'month': 'یک ماه اخیر',
+                    '3months': 'سه ماه اخیر',
+                    '6months': 'شش ماه اخیر',
+                    'year': 'یک سال اخیر'
+                };
+                filterInfo.push(`بازه زمانی: ${rangeLabels[dateRange]}`);
             }
             
             const searchTerm = document.getElementById('searchBox').value.trim();
@@ -1559,5 +1533,5 @@
             }, 3000);
         }
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ad2e591a7ef3649',t:'MTc2NTYwMjAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9adbd6b291fc9bf8',t:'MTc2NTY5NTc3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
